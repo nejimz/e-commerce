@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Http\Request;
 
 class CartService
@@ -227,7 +228,7 @@ class CartService
 
         $total = round(max(0, $subtotal - $discount + $delivery + $packing), 2);
         $vatEnabled = (bool) Setting::get('vat_enabled', true);
-        $vat = $vatEnabled ? \App\Support\Money::vatComponent($total, (float) Setting::get('vat_rate', 12)) : 0;
+        $vat = $vatEnabled ? Money::vatComponent($total, (float) Setting::get('vat_rate', 12)) : 0;
 
         return [
             'subtotal' => $subtotal,
@@ -243,10 +244,10 @@ class CartService
         ];
     }
 
-    public function payload(Request $request, ?string $province = null, ?string $city = null): array
+    public function payload(Request $request, ?string $province = null, ?string $city = null, ?string $postal = null): array
     {
         $cart = $this->current($request);
-        $totals = $this->totals($cart, $province, $city, null, $request->user()?->id, $request->user()?->email);
+        $totals = $this->totals($cart, $province, $city, $postal, $request->user()?->id, $request->user()?->email);
 
         return [
             'cart' => [

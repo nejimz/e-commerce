@@ -23,12 +23,13 @@ export default function BrandPage({
                     { label: brand.name },
                 ]}
             />
-            <h1 className="shop-h1">{brand.name}</h1>
-            {brand.description && <p className="shop-body-lg mt-3 max-w-2xl text-[var(--shop-text-muted)]">{brand.description}</p>}
-            <p className="mt-2 text-sm text-[var(--shop-text-muted)]">
+            <p className="shop-caption uppercase tracking-[0.16em] text-[var(--shop-text-muted)]">Brand</p>
+            <h1 className="shop-h1 mt-2">{brand.name}</h1>
+            {brand.description && <p className="shop-body-lg mt-4 max-w-2xl text-[var(--shop-text-muted)]">{brand.description}</p>}
+            <p className="mt-3 text-sm text-[var(--shop-text-muted)]">
                 {products.meta.total} {products.meta.total === 1 ? 'product' : 'products'}
             </p>
-            <div className="mt-8">
+            <div className="mt-10">
                 {products.data?.length ? (
                     <ProductGrid>
                         {products.data.map((p) => (

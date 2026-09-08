@@ -25,7 +25,10 @@ class CheckoutController extends Controller
 
     public function show(Request $request)
     {
-        $payload = $this->carts->payload($request);
+        $province = $request->string('province')->toString() ?: null;
+        $city = $request->string('city')->toString() ?: null;
+        $postal = $request->string('postal_code')->toString() ?: null;
+        $payload = $this->carts->payload($request, $province, $city, $postal);
         if (($payload['cart']['totals']['item_count'] ?? 0) < 1) {
             return redirect()->route('cart.show')->with('error', 'Your cart is empty.');
         }
@@ -133,6 +136,7 @@ class CheckoutController extends Controller
         foreach ($order->items as $item) {
             if (! $item->product_id) {
                 $skipped[] = $item->product_name_snapshot;
+
                 continue;
             }
             try {

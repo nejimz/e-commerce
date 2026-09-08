@@ -1,3 +1,4 @@
+import { ShopButton } from '@/components/store/shop-button';
 import { Head, Link } from '@inertiajs/react';
 
 const copy: Record<number, { title: string; body: string }> = {
@@ -13,12 +14,17 @@ export default function ErrorPage({ status, message }: { status: number; message
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--shop-bg)] px-4 text-center text-[var(--shop-text)]">
             <Head title={c.title} />
-            <p className="text-sm text-[var(--shop-text-muted)]">{status}</p>
-            <h1 className="mt-2 text-3xl font-semibold">{c.title}</h1>
-            <p className="mt-2 max-w-md text-[var(--shop-text-muted)]">{message || c.body}</p>
-            <Link href="/" className="mt-6 h-11 rounded-md bg-[var(--shop-accent)] px-4 leading-[2.75rem] text-[var(--shop-on-accent)]">
-                Back to shop
-            </Link>
+            <p className="shop-caption uppercase tracking-[0.16em] text-[var(--shop-text-muted)]">{status}</p>
+            <h1 className="shop-h1 mt-3">{c.title}</h1>
+            <p className="mt-3 max-w-md text-[var(--shop-text-muted)]">{message || c.body}</p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+                <ShopButton asChild>
+                    <Link href="/shop">Browse shop</Link>
+                </ShopButton>
+                <ShopButton asChild variant="secondary">
+                    <Link href="/">Home</Link>
+                </ShopButton>
+            </div>
         </div>
     );
 }

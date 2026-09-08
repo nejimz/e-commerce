@@ -1,7 +1,10 @@
+import { CartDrawer } from '@/components/store/cart-drawer';
 import { StoreToast } from '@/components/store/store-toast';
 import { ShopButton } from '@/components/store/shop-button';
+import { ShopContainer } from '@/components/store/shop-container';
 import { ShopInput } from '@/components/store/shop-input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import type { CartPayload } from '@/types/cart';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Menu, Search, ShoppingBag, User, X } from 'lucide-react';
 import { FormEvent, PropsWithChildren, useEffect, useRef, useState } from 'react';
@@ -9,17 +12,37 @@ import { FormEvent, PropsWithChildren, useEffect, useRef, useState } from 'react
 type Shared = {
     name: string;
     cartCount: number;
+    cart: CartPayload;
     auth: { user: { name: string; role?: string } | null };
     store: { paused: boolean; paused_message?: string; announcement?: string };
     flash: { success?: string; error?: string };
     navCategories: { id: number; name: string; slug: string }[];
 };
 
-export default function StoreLayout({ children, title }: PropsWithChildren<{ title?: string }>) {
-    const { name, cartCount, auth, store, flash, navCategories = [] } = usePage<Shared>().props;
+export default function StoreLayout({
+    children,
+    title,
+    flush = false,
+}: PropsWithChildren<{ title?: string; flush?: boolean }>) {
+    const { name, cartCount, cart = { id: null, items: [], totals: { subtotal: 0, discount: 0, delivery_fee: 0, packing_fee: 0, vat_amount: 0, total: 0, item_count: 0 } }, auth, store, flash, navCategories = [] } = usePage<Shared>().props;
     const [dismissed, setDismissed] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
+    const [cartOpen, setCartOpen] = useState(false);
+    const { url } = usePage();
+    const desktopCategories = navCategories.slice(0, 5);
+    const storeName = name || 'Shop';
+    const accountHref = auth.user
+        ? auth.user.role === 'admin' || auth.user.role === 'staff'
+            ? '/admin'
+            : '/account/orders'
+        : '/login';
+
+    useEffect(() => {
+        if (flash?.success === 'Added to cart.') {
+            setCartOpen(true);
+        }
+    }, [flash?.success, cartCount]);
 
     return (
         <div className="shop-root min-h-screen bg-[var(--shop-bg)] text-[var(--shop-text)]">
@@ -32,77 +55,84 @@ export default function StoreLayout({ children, title }: PropsWithChildren<{ tit
             </a>
             {store.announcement && !dismissed && (
                 <div className="bg-[var(--shop-accent)] px-4 py-2 text-center text-sm text-[var(--shop-on-accent)]">
-                    {store.announcement}
-                    <button className="ml-3 underline" onClick={() => setDismissed(true)} type="button">
-                        Dismiss
+                    <span>{store.announcement}</span>
+                    <button
+                        className="ml-3 inline-flex h-8 w-8 items-center justify-center rounded-full align-middle hover:bg-white/10"
+                        onClick={() => setDismissed(true)}
+                        type="button"
+                        aria-label="Dismiss announcement"
+                    >
+                        <X className="h-3.5 w-3.5" />
                     </button>
                 </div>
             )}
             {store.paused && (
-                <div className="bg-[var(--shop-warning)] px-4 py-2 text-center text-sm text-[var(--shop-on-accent)]">
+                <div className="border-b border-[var(--shop-border)] bg-[#fbf3e4] px-4 py-2 text-center text-sm text-[var(--shop-text)]">
                     {store.paused_message || 'The store is paused. Browsing is available; checkout is closed.'}
                 </div>
             )}
-            <header className="sticky top-0 z-40 border-b border-[var(--shop-border)] bg-[var(--shop-surface)]/95 backdrop-blur">
-                <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 md:h-16 md:gap-6 md:px-6">
+            <header className="sticky top-0 z-40 border-b border-[var(--shop-border)] bg-[var(--shop-surface)]/90 backdrop-blur-md">
+                <div className="shop-container flex h-14 items-center gap-3 md:h-16 md:gap-8">
                     <button
                         type="button"
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--shop-radius-control)] md:hidden"
+                        className="shop-icon-btn md:hidden"
                         aria-label="Open menu"
                         onClick={() => setMenuOpen(true)}
                     >
                         <Menu className="h-5 w-5" />
                     </button>
-                    <Link href="/" className="font-semibold tracking-tight">
-                        {name || 'Shop'}
+                    <Link
+                        href="/"
+                        className="shrink-0 font-[family-name:var(--shop-display-font)] text-xl tracking-tight md:text-[1.35rem]"
+                    >
+                        {storeName}
                     </Link>
                     <nav className="hidden min-w-0 flex-1 items-center gap-6 text-sm md:flex">
-                        <Link href="/shop" className="text-[var(--shop-text-muted)] hover:text-[var(--shop-text)]">
+                        <Link href="/shop" className="shop-nav-link" data-active={url.startsWith('/shop') ? 'true' : undefined}>
                             Shop
                         </Link>
-                        {navCategories.map((c) => (
+                        {desktopCategories.map((c) => (
                             <Link
                                 key={c.id}
                                 href={`/shop?category=${c.slug}`}
-                                className="truncate text-[var(--shop-text-muted)] hover:text-[var(--shop-text)]"
+                                className="shop-nav-link truncate"
+                                data-active={url.includes(`category=${c.slug}`) ? 'true' : undefined}
                             >
                                 {c.name}
                             </Link>
                         ))}
                     </nav>
-                    <div className="ml-auto flex items-center gap-1 md:gap-2">
+                    <div className="ml-auto flex items-center gap-0.5 md:gap-1">
                         <div className="hidden md:block">
                             <HeaderSearch />
                         </div>
                         <button
                             type="button"
-                            className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--shop-radius-control)] md:hidden"
-                            aria-label="Search"
+                            className="shop-icon-btn md:hidden"
+                            aria-label={searchOpen ? 'Close search' : 'Search'}
                             onClick={() => setSearchOpen((v) => !v)}
                         >
                             {searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
                         </button>
-                        {auth.user ? (
-                            <Link
-                                href={auth.user.role === 'admin' || auth.user.role === 'staff' ? '/admin' : '/account/orders'}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--shop-radius-control)]"
-                                aria-label="Account"
-                            >
-                                <User className="h-5 w-5" />
-                            </Link>
-                        ) : (
-                            <Link href="/login" className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--shop-radius-control)]" aria-label="Sign in">
-                                <User className="h-5 w-5" />
-                            </Link>
-                        )}
-                        <Link href="/cart" className="relative inline-flex h-11 w-11 items-center justify-center rounded-[var(--shop-radius-control)]" aria-label="Cart">
+                        <Link href={accountHref} className="shop-icon-btn" aria-label={auth.user ? 'Account' : 'Sign in'}>
+                            <User className="h-5 w-5" />
+                        </Link>
+                        <button
+                            type="button"
+                            className="shop-icon-btn relative"
+                            aria-label="Cart"
+                            onClick={() => setCartOpen(true)}
+                        >
                             <ShoppingBag className="h-5 w-5" />
                             {cartCount > 0 && (
-                                <span className="absolute right-1 top-1 min-w-4 rounded-full bg-[var(--shop-accent)] px-1 text-center text-[10px] font-semibold leading-4 text-[var(--shop-on-accent)]">
+                                <span
+                                    key={cartCount}
+                                    className="shop-cart-badge absolute right-0.5 top-0.5 min-w-4 rounded-full bg-[var(--shop-accent)] px-1 text-center text-[10px] font-semibold leading-4 text-[var(--shop-on-accent)]"
+                                >
                                     {cartCount}
                                 </span>
                             )}
-                        </Link>
+                        </button>
                     </div>
                 </div>
                 {searchOpen && (
@@ -112,44 +142,118 @@ export default function StoreLayout({ children, title }: PropsWithChildren<{ tit
                 )}
             </header>
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-                <SheetContent side="left" className="w-[min(100%,20rem)] bg-[var(--shop-surface)] p-6 data-[state=closed]:duration-300 data-[state=open]:duration-300">
+                <SheetContent
+                    side="left"
+                    className="w-[min(100%,20rem)] bg-[var(--shop-surface)] p-6 data-[state=closed]:duration-300 data-[state=open]:duration-300"
+                >
                     <SheetHeader>
-                        <SheetTitle className="text-left">{name || 'Shop'}</SheetTitle>
+                        <SheetTitle className="text-left font-[family-name:var(--shop-display-font)] text-xl">{storeName}</SheetTitle>
                     </SheetHeader>
-                    <nav className="mt-8 flex flex-col gap-1 text-base">
-                        <Link href="/shop" className="flex min-h-11 items-center" onClick={() => setMenuOpen(false)}>
+                    <nav className="mt-8 flex flex-col text-base">
+                        <Link href="/shop" className="flex min-h-12 items-center border-b border-[var(--shop-border)]" onClick={() => setMenuOpen(false)}>
                             Shop all
                         </Link>
                         {navCategories.map((c) => (
                             <Link
                                 key={c.id}
                                 href={`/shop?category=${c.slug}`}
-                                className="flex min-h-11 items-center text-[var(--shop-text-muted)]"
+                                className="flex min-h-12 items-center border-b border-[var(--shop-border)] text-[var(--shop-text-muted)]"
                                 onClick={() => setMenuOpen(false)}
                             >
                                 {c.name}
                             </Link>
                         ))}
+                        <Link
+                            href={accountHref}
+                            className="flex min-h-12 items-center text-[var(--shop-text-muted)]"
+                            onClick={() => setMenuOpen(false)}
+                        >
+                            {auth.user ? 'Account' : 'Sign in'}
+                        </Link>
                     </nav>
                 </SheetContent>
             </Sheet>
-            <StoreToast flash={flash || {}} />
-            <main id="main-content" className="mx-auto min-h-[60vh] max-w-7xl px-4 py-8 md:px-6 md:py-10">
+            <CartDrawer cart={cart} open={cartOpen} onOpenChange={setCartOpen} />
+            <StoreToast
+                flash={{
+                    ...(flash || {}),
+                    success: flash?.success === 'Added to cart.' ? undefined : flash?.success,
+                }}
+            />
+            <main id="main-content" className={flush ? 'min-h-[60vh]' : 'shop-container min-h-[60vh] py-8 md:py-12'}>
                 {children}
             </main>
-            <footer className="mt-16 border-t border-[var(--shop-border)]">
-                <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 text-sm text-[var(--shop-text-muted)] md:grid-cols-[1.4fr_1fr] md:px-6">
+            <footer className="mt-20 border-t border-[var(--shop-border)] bg-[var(--shop-surface)]">
+                <ShopContainer className="grid gap-12 py-14 text-sm md:grid-cols-4">
+                    <div className="md:col-span-1">
+                        <div className="font-[family-name:var(--shop-display-font)] text-lg text-[var(--shop-text)]">{storeName}</div>
+                        <p className="mt-3 max-w-xs leading-relaxed text-[var(--shop-text-muted)]">
+                            Everyday pieces, delivered in Metro Manila. Prices in PHP, VAT included when enabled.
+                        </p>
+                    </div>
                     <div>
-                        <div className="text-base font-medium text-[var(--shop-text)]">{name || 'Shop'}</div>
-                        <p className="mt-2 max-w-sm leading-relaxed">Everyday pieces, delivered in Metro Manila. Prices in PHP, VAT included when enabled.</p>
+                        <p className="shop-caption uppercase tracking-[0.14em] text-[var(--shop-text)]">Shop</p>
+                        <ul className="mt-4 space-y-2.5 text-[var(--shop-text-muted)]">
+                            <li>
+                                <Link href="/shop" className="hover:text-[var(--shop-text)]">
+                                    All products
+                                </Link>
+                            </li>
+                            {navCategories.map((c) => (
+                                <li key={c.id}>
+                                    <Link href={`/shop?category=${c.slug}`} className="hover:text-[var(--shop-text)]">
+                                        {c.name}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
-                    <div className="flex flex-wrap gap-x-6 gap-y-3 md:justify-end">
-                        <Link href="/p/shipping">Shipping</Link>
-                        <Link href="/p/returns">Returns</Link>
-                        <Link href="/p/terms">Terms</Link>
-                        <Link href="/p/privacy">Privacy</Link>
-                        <Link href="/p/contact">Contact</Link>
+                    <div>
+                        <p className="shop-caption uppercase tracking-[0.14em] text-[var(--shop-text)]">Help</p>
+                        <ul className="mt-4 space-y-2.5 text-[var(--shop-text-muted)]">
+                            <li>
+                                <Link href="/p/shipping" className="hover:text-[var(--shop-text)]">
+                                    Shipping
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/p/returns" className="hover:text-[var(--shop-text)]">
+                                    Returns
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/p/contact" className="hover:text-[var(--shop-text)]">
+                                    Contact
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/cart" className="hover:text-[var(--shop-text)]">
+                                    Cart
+                                </Link>
+                            </li>
+                        </ul>
                     </div>
+                    <div>
+                        <p className="shop-caption uppercase tracking-[0.14em] text-[var(--shop-text)]">Policies</p>
+                        <ul className="mt-4 space-y-2.5 text-[var(--shop-text-muted)]">
+                            <li>
+                                <Link href="/p/terms" className="hover:text-[var(--shop-text)]">
+                                    Terms of sale
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/p/privacy" className="hover:text-[var(--shop-text)]">
+                                    Privacy
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+                </ShopContainer>
+                <div className="border-t border-[var(--shop-border)]">
+                    <ShopContainer className="flex flex-wrap items-center justify-between gap-2 py-5 text-xs text-[var(--shop-text-dim)]">
+                        <p>© {new Date().getFullYear()} {storeName}</p>
+                        <p>Metro Manila · PHP</p>
+                    </ShopContainer>
                 </div>
             </footer>
         </div>
@@ -175,20 +279,21 @@ function HeaderSearch({ autoFocus, onDone }: { autoFocus?: boolean; onDone?: () 
     };
 
     return (
-        <form onSubmit={submit} className="flex items-center gap-2" role="search">
+        <form onSubmit={submit} className="relative" role="search">
             <label htmlFor="header-search" className="sr-only">
                 Search products
             </label>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--shop-text-dim)]" aria-hidden />
             <ShopInput
                 ref={inputRef}
                 id="header-search"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search"
-                className="h-11 md:w-52"
+                placeholder="Search products"
+                className="h-10 rounded-[var(--shop-radius-pill)] border-[var(--shop-border)] bg-[var(--shop-bg)] pl-9 pr-4 md:w-56"
             />
-            <ShopButton type="submit" variant="ghost" size="sm" className="h-11 px-3" aria-label="Submit search">
-                <Search className="h-4 w-4" />
+            <ShopButton type="submit" className="sr-only">
+                Search
             </ShopButton>
         </form>
     );

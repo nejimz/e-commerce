@@ -2,11 +2,13 @@ import StoreLayout from '@/layouts/store-layout';
 import { ProductCard, type ProductCardData } from '@/components/product-card';
 import { ProductGallery } from '@/components/store/product-gallery';
 import { ProductGrid } from '@/components/store/product-grid';
+import { QuantityStepper } from '@/components/store/quantity-stepper';
 import { ShopBreadcrumb } from '@/components/store/shop-breadcrumb';
 import { ShopButton } from '@/components/store/shop-button';
+import { ShopSectionHeader } from '@/components/store/shop-section-header';
 import { formatMoney } from '@/lib/money';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Minus, Plus } from 'lucide-react';
+import { RefreshCcw, Truck } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 type Variant = {
@@ -64,6 +66,10 @@ export default function ProductPage({ product, related, jsonLd }: { product: Pro
     const stock = variant ? variant.stock : product.stock;
     const comboMissing = product.has_variants && !variant;
     const oos = !comboMissing && stock <= 0;
+    const saving =
+        product.compare_at_price && product.compare_at_price > price
+            ? Math.round((1 - price / product.compare_at_price) * 100)
+            : null;
 
     const form = useForm({
         product_id: product.id,
@@ -105,13 +111,13 @@ export default function ProductPage({ product, related, jsonLd }: { product: Pro
             return null;
         }
         if (stock <= 0) {
-            return <p className="mt-2 text-sm text-[var(--shop-danger)]">Out of stock</p>;
+            return <p className="mt-3 text-sm text-[var(--shop-danger)]">Out of stock</p>;
         }
         if (stock <= 10) {
-            return <p className="mt-2 text-sm text-[var(--shop-warning)]">Only {stock} left</p>;
+            return <p className="mt-3 text-sm text-[var(--shop-warning)]">Only {stock} left</p>;
         }
 
-        return <p className="mt-2 text-sm text-[var(--shop-success)]">In stock</p>;
+        return <p className="mt-3 text-sm text-[var(--shop-success)]">In stock</p>;
     };
 
     const addToCart = () => {
@@ -142,34 +148,46 @@ export default function ProductPage({ product, related, jsonLd }: { product: Pro
                     { label: product.name },
                 ]}
             />
-            <div className="grid gap-10 md:grid-cols-2 md:gap-14">
+            <div className="grid gap-10 md:grid-cols-2 md:items-start md:gap-16">
                 <ProductGallery images={product.images} productName={product.name} />
-                <div>
+                <div className="md:sticky md:top-24">
                     {product.brand && (
                         <Link
                             href={`/brands/${product.brand.slug}`}
-                            className="shop-caption uppercase tracking-wide text-[var(--shop-text-muted)] hover:text-[var(--shop-text)]"
+                            className="shop-caption uppercase tracking-[0.14em] text-[var(--shop-text-muted)] hover:text-[var(--shop-text)]"
                         >
                             {product.brand.name}
                         </Link>
                     )}
                     <h1 className="shop-h1 mt-2">{product.name}</h1>
-                    <p className="shop-price-lg mt-3">
-                        {formatMoney(price)}
+                    <div className="mt-4 flex flex-wrap items-baseline gap-3">
+                        <p className="shop-price-lg">{formatMoney(price)}</p>
                         {product.compare_at_price && product.compare_at_price > price && (
-                            <span className="ml-2 text-base font-normal text-[var(--shop-text-muted)] line-through">
-                                {formatMoney(product.compare_at_price)}
-                            </span>
+                            <>
+                                <span className="text-base text-[var(--shop-text-muted)] line-through">{formatMoney(product.compare_at_price)}</span>
+                                {saving ? (
+                                    <span className="shop-caption rounded-[var(--shop-radius-pill)] bg-[var(--shop-danger)] px-2 py-0.5 text-white">
+                                        Save {saving}%
+                                    </span>
+                                ) : null}
+                            </>
                         )}
-                    </p>
+                    </div>
                     {product.short_description && (
-                        <p className="shop-body-lg mt-4 text-[var(--shop-text-muted)]">{product.short_description}</p>
+                        <p className="shop-body-lg mt-5 text-[var(--shop-text-muted)]">{product.short_description}</p>
                     )}
 
                     {product.options.map((opt) => (
-                        <div key={opt.id} className="mt-6">
-                            <p className="text-sm font-medium">{opt.name}</p>
-                            <div className="mt-2 flex flex-wrap gap-2">
+                        <div key={opt.id} className="mt-7">
+                            <p className="text-sm font-medium">
+                                {opt.name}
+                                {selected[opt.id] && (
+                                    <span className="ml-2 font-normal text-[var(--shop-text-muted)]">
+                                        {opt.values.find((v) => v.id === selected[opt.id])?.value}
+                                    </span>
+                                )}
+                            </p>
+                            <div className="mt-2.5 flex flex-wrap gap-2">
                                 {opt.values.map((v) => {
                                     const active = selected[opt.id] === v.id;
                                     const available = isValueAvailable(opt.id, v.id);
@@ -180,10 +198,10 @@ export default function ProductPage({ product, related, jsonLd }: { product: Pro
                                             type="button"
                                             disabled={!available && !active}
                                             onClick={() => setSelected({ ...selected, [opt.id]: v.id })}
-                                            className={`h-11 min-w-11 rounded-[var(--shop-radius-control)] border px-3 text-sm ${
+                                            className={`h-11 min-w-11 rounded-[var(--shop-radius-pill)] border px-4 text-sm transition-colors duration-[var(--shop-duration-micro)] ease-[var(--shop-ease)] ${
                                                 active
-                                                    ? 'border-[var(--shop-accent)] bg-[var(--shop-accent)] text-[var(--shop-on-accent)]'
-                                                    : 'border-[var(--shop-border)] bg-[var(--shop-surface)]'
+                                                    ? 'border-[var(--shop-text)] bg-[var(--shop-text)] text-[var(--shop-surface)]'
+                                                    : 'border-[var(--shop-border)] bg-[var(--shop-surface)] hover:border-[var(--shop-text-dim)]'
                                             } disabled:cursor-not-allowed disabled:opacity-40`}
                                         >
                                             {v.value}
@@ -194,51 +212,59 @@ export default function ProductPage({ product, related, jsonLd }: { product: Pro
                         </div>
                     ))}
 
-                    <div className="mt-6">
+                    <div className="mt-7">
                         <p className="text-sm font-medium">Quantity</p>
-                        <div className="mt-2 inline-flex h-11 items-center rounded-[var(--shop-radius-control)] border border-[var(--shop-border)] bg-[var(--shop-surface)]">
-                            <button
-                                type="button"
-                                className="inline-flex h-11 w-11 items-center justify-center"
-                                aria-label="Decrease quantity"
-                                disabled={quantity <= 1}
-                                onClick={() => form.setData('quantity', quantity - 1)}
-                            >
-                                <Minus className="h-4 w-4" />
-                            </button>
-                            <span className="min-w-8 text-center tabular-nums" aria-live="polite">
-                                {quantity}
-                            </span>
-                            <button
-                                type="button"
-                                className="inline-flex h-11 w-11 items-center justify-center"
-                                aria-label="Increase quantity"
-                                disabled={quantity >= maxQty || comboMissing || oos}
-                                onClick={() => form.setData('quantity', quantity + 1)}
-                            >
-                                <Plus className="h-4 w-4" />
-                            </button>
+                        <div className="mt-2.5 hidden items-center gap-3 md:flex">
+                            <QuantityStepper
+                                value={quantity}
+                                max={maxQty}
+                                disabled={comboMissing || oos}
+                                onChange={(next) => form.setData('quantity', next)}
+                            />
+                            <ShopButton className="min-w-[12rem] flex-1" size="md" disabled={ctaDisabled} onClick={addToCart}>
+                                {ctaLabel}
+                            </ShopButton>
+                        </div>
+                        <div className="mt-2.5 md:hidden">
+                            <QuantityStepper
+                                value={quantity}
+                                max={maxQty}
+                                disabled={comboMissing || oos}
+                                onChange={(next) => form.setData('quantity', next)}
+                            />
                         </div>
                         {stockLabel()}
                         {reason() && <p className="mt-1 text-sm text-[var(--shop-danger)]">{reason()}</p>}
+                        {form.errors.cart && <p className="mt-2 text-sm text-[var(--shop-danger)]">{form.errors.cart}</p>}
                     </div>
 
-                    <ShopButton size="lg" className="mt-8 hidden md:inline-flex" disabled={ctaDisabled} onClick={addToCart}>
-                        {ctaLabel}
-                    </ShopButton>
+                    <ul className="mt-8 space-y-3 border-t border-[var(--shop-border)] pt-6 text-sm text-[var(--shop-text-muted)]">
+                        <li className="flex gap-3">
+                            <Truck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--shop-accent)]" aria-hidden />
+                            Metro Manila delivery on serviceable addresses. Fees shown at checkout.
+                        </li>
+                        <li className="flex gap-3">
+                            <RefreshCcw className="mt-0.5 h-4 w-4 shrink-0 text-[var(--shop-accent)]" aria-hidden />
+                            Easy returns — see our{' '}
+                            <Link href="/p/returns" className="underline underline-offset-2 hover:text-[var(--shop-text)]">
+                                returns policy
+                            </Link>
+                            .
+                        </li>
+                    </ul>
                 </div>
             </div>
 
             {product.description && (
-                <div className="shop-section max-w-3xl">
-                    <h2 className="shop-h3 mb-3">Details</h2>
-                    <div className="whitespace-pre-wrap text-[var(--shop-text-muted)] leading-relaxed">{product.description}</div>
+                <div className="shop-section max-w-[40rem]">
+                    <h2 className="shop-h3 mb-4">Details</h2>
+                    <div className="shop-body-lg whitespace-pre-wrap text-[var(--shop-text-muted)]">{product.description}</div>
                 </div>
             )}
 
             {related.length > 0 && (
                 <section className="shop-section">
-                    <h2 className="shop-h2 mb-6">You may also like</h2>
+                    <ShopSectionHeader title="You may also like" href={product.category ? `/shop?category=${product.category.slug}` : '/shop'} />
                     <ProductGrid>
                         {related.map((p) => (
                             <ProductCard key={p.id} product={p} />
@@ -248,6 +274,7 @@ export default function ProductPage({ product, related, jsonLd }: { product: Pro
             )}
 
             <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--shop-border)] bg-[var(--shop-surface)]/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+                {form.errors.cart && <p className="mb-2 text-sm text-[var(--shop-danger)]">{form.errors.cart}</p>}
                 <div className="flex items-center gap-4">
                     <p className="shop-price">{formatMoney(price)}</p>
                     <ShopButton className="flex-1" disabled={ctaDisabled} onClick={addToCart}>

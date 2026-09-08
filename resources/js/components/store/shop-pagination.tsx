@@ -39,7 +39,7 @@ export function ShopPagination({
     const pages = pageList(current, last);
 
     return (
-        <nav aria-label="Pagination" className="mt-10 flex flex-wrap items-center justify-center gap-2">
+        <nav aria-label="Pagination" className="mt-12 flex flex-wrap items-center justify-center gap-1.5">
             {current > 1 ? (
                 <Link
                     href={buildHref(current - 1)}

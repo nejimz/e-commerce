@@ -18,4 +18,10 @@ export default defineConfig({
     esbuild: {
         jsx: 'automatic',
     },
+    server: {
+        // Bind to IPv4 explicitly; on Windows "localhost" resolves to ::1,
+        // which emits http://[::1]:5173 asset URLs that browsers fail to load.
+        host: '127.0.0.1',
+        port: 5173,
+    },
 });

@@ -53,24 +53,24 @@ export function ProductCard({ product }: { product: ProductCardData }) {
     const badges = cardBadges(product);
     const href = `/products/${product.slug}`;
 
-    const cta = () => {
+    const cta = (compact = false) => {
         if (oos) {
             return (
-                <ShopButton disabled className="w-full" variant="secondary">
+                <ShopButton disabled className="w-full" variant="secondary" size={compact ? 'sm' : 'md'}>
                     Out of stock
                 </ShopButton>
             );
         }
         if (product.has_variants) {
             return (
-                <ShopButton asChild className="w-full">
+                <ShopButton asChild className="w-full" size={compact ? 'sm' : 'md'}>
                     <Link href={href}>Select options</Link>
                 </ShopButton>
             );
         }
 
         return (
-            <ShopButton className="w-full" disabled={form.processing} onClick={() => form.post('/cart')}>
+            <ShopButton className="w-full" size={compact ? 'sm' : 'md'} disabled={form.processing} onClick={() => form.post('/cart')}>
                 {form.processing ? 'Adding…' : 'Add to cart'}
             </ShopButton>
         );
@@ -78,16 +78,20 @@ export function ProductCard({ product }: { product: ProductCardData }) {
 
     return (
         <article className="group">
-            <div className="relative overflow-hidden rounded-[var(--shop-radius-image)] bg-[var(--shop-surface)] shadow-[var(--shop-shadow-e1)] transition-shadow duration-[var(--shop-duration)] ease-[var(--shop-ease)] group-hover:shadow-[var(--shop-shadow-e2)]">
+            <div className="relative overflow-hidden rounded-[var(--shop-radius-image)] bg-[var(--shop-surface)]">
                 <Link href={href} className="block aspect-square overflow-hidden">
                     {product.image ? (
                         <img
                             src={product.image}
                             alt={alt}
-                            className={`h-full w-full object-cover transition-transform duration-[var(--shop-duration)] ease-[var(--shop-ease)] group-hover:scale-[1.03] ${oos ? 'opacity-45' : ''}`}
+                            loading="lazy"
+                            decoding="async"
+                            className={`h-full w-full object-cover transition-transform duration-300 ease-[var(--shop-ease)] group-hover:scale-[1.04] ${oos ? 'opacity-45' : ''}`}
                         />
                     ) : (
-                        <div className="flex h-full items-center justify-center shop-body-sm text-[var(--shop-text-muted)]">No image</div>
+                        <div className="flex h-full items-center justify-center bg-[var(--shop-surface)] shop-body-sm text-[var(--shop-text-dim)]">
+                            {product.name}
+                        </div>
                     )}
                 </Link>
                 {badges.length > 0 && (
@@ -97,13 +101,15 @@ export function ProductCard({ product }: { product: ProductCardData }) {
                         ))}
                     </div>
                 )}
-                <div className="pointer-events-none absolute inset-x-3 bottom-3 hidden opacity-0 transition-opacity duration-[var(--shop-duration-micro)] ease-[var(--shop-ease)] md:block md:group-hover:pointer-events-auto md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:opacity-100">
-                    {cta()}
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden p-3 opacity-0 transition-opacity duration-[var(--shop-duration)] ease-[var(--shop-ease)] md:block md:group-hover:pointer-events-auto md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:opacity-100">
+                    <div className="rounded-[var(--shop-radius-control)] bg-[var(--shop-surface)]/95 p-1 shadow-[var(--shop-shadow-e2)] backdrop-blur-sm">
+                        {cta(true)}
+                    </div>
                 </div>
             </div>
             <div className="space-y-1 pt-3">
-                {product.brand && <p className="shop-caption uppercase tracking-wide text-[var(--shop-text-muted)]">{product.brand}</p>}
-                <Link href={href} className="shop-h4 line-clamp-2">
+                {product.brand && <p className="shop-caption uppercase tracking-[0.12em] text-[var(--shop-text-muted)]">{product.brand}</p>}
+                <Link href={href} className="shop-h4 line-clamp-2 hover:text-[var(--shop-accent)]">
                     {product.name}
                 </Link>
                 <p className="shop-price">

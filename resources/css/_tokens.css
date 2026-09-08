@@ -34,6 +34,7 @@
     --shop-shadow-e2: 0 8px 24px rgba(26, 23, 20, 0.08);
     --shop-shadow-e3: 0 16px 40px rgba(26, 23, 20, 0.12);
     --shop-font: Inter, ui-sans-serif, system-ui, sans-serif;
+    --shop-display-font: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
     --shop-ease: cubic-bezier(0.2, 0, 0, 1);
     --shop-duration: 220ms;
     --shop-duration-micro: 150ms;

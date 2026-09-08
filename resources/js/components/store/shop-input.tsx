@@ -24,3 +24,14 @@ export function ShopTextarea({ className, ...props }: TextareaHTMLAttributes<HTM
 export function ShopLabel({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
     return <label className={cn('shop-caption mb-1.5 block text-[var(--shop-text)]', className)} {...props} />;
 }
+
+const shopCheckClass =
+    'h-4 w-4 shrink-0 rounded-[3px] border border-[var(--shop-border)] bg-[var(--shop-surface)] accent-[var(--shop-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--shop-accent)] disabled:opacity-45';
+
+export function ShopCheckbox({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+    return <input type="checkbox" className={cn(shopCheckClass, className)} {...props} />;
+}
+
+export function ShopRadio({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+    return <input type="radio" className={cn(shopCheckClass, 'rounded-full', className)} {...props} />;
+}

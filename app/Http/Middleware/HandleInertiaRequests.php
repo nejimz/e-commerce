@@ -19,7 +19,7 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        $cartCount = 0;
+        $cart = $this->emptyCart();
         $storeName = config('app.name');
         $navCategories = [];
         $store = [
@@ -31,7 +31,7 @@ class HandleInertiaRequests extends Middleware
             'vat_enabled' => true,
         ];
         try {
-            $cartCount = app(CartService::class)->current($request)->items->sum('quantity');
+            $cart = app(CartService::class)->payload($request)['cart'];
             $storeName = Setting::get('store_name', config('app.name'));
             $store = [
                 'paused' => (bool) Setting::get('store_paused', false),
@@ -47,7 +47,7 @@ class HandleInertiaRequests extends Middleware
                 ->orderBy('sort_order')
                 ->get(['id', 'name', 'slug']);
         } catch (\Throwable) {
-            $cartCount = 0;
+            $cart = $this->emptyCart();
         }
 
         return [
@@ -62,12 +62,36 @@ class HandleInertiaRequests extends Middleware
                     'role' => $request->user()->role?->value,
                 ] : null,
             ],
-            'cartCount' => $cartCount,
+            'cart' => $cart,
+            'cartCount' => $cart['totals']['item_count'] ?? 0,
             'navCategories' => $navCategories,
             'store' => $store,
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{id: null, items: array<int, mixed>, totals: array<string, mixed>}
+     */
+    private function emptyCart(): array
+    {
+        return [
+            'id' => null,
+            'items' => [],
+            'totals' => [
+                'subtotal' => 0,
+                'discount' => 0,
+                'delivery_fee' => 0,
+                'packing_fee' => 0,
+                'vat_amount' => 0,
+                'total' => 0,
+                'item_count' => 0,
+                'coupon_code' => null,
+                'same_day' => false,
+                'free_delivery_threshold' => 0,
             ],
         ];
     }

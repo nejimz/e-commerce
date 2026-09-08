@@ -3,14 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\OrderStatus;
-use App\Enums\PaymentStatus;
 use App\Models\Coupon;
 use App\Models\Order;
-use App\Models\Payment;
-use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class CheckoutTest extends TestCase
@@ -134,5 +132,56 @@ class CheckoutTest extends TestCase
 
         $stranger = User::factory()->create();
         $this->actingAs($stranger)->get('/orders/'.$order->order_number)->assertNotFound();
+    }
+
+    public function test_shared_cart_includes_items_after_add(): void
+    {
+        $this->allowMakati();
+        $product = $this->createProduct();
+
+        $this->post('/cart', ['product_id' => $product->id, 'quantity' => 2])
+            ->assertSessionHas('success', 'Added to cart.');
+
+        $this->get('/shop')->assertInertia(fn (Assert $page) => $page
+            ->has('cart.items', 1)
+            ->where('cartCount', 2)
+            ->where('cart.items.0.quantity', 2)
+        );
+    }
+
+    public function test_checkout_accepts_optional_delivery_and_gift_fields(): void
+    {
+        Mail::fake();
+        $this->allowMakati();
+        $product = $this->createProduct();
+        $this->post('/cart', ['product_id' => $product->id, 'quantity' => 1]);
+
+        $this->post('/checkout', $this->checkoutPayload([
+            'line2' => 'Unit 5A',
+            'barangay' => 'Poblacion',
+            'notes' => 'Leave at lobby',
+            'gift_message' => 'Happy birthday',
+            'hide_prices' => true,
+        ]))->assertSessionHasNoErrors()->assertRedirect();
+
+        $order = Order::query()->first();
+        $this->assertNotNull($order);
+        $this->assertEquals('Unit 5A', $order->shipping_line2);
+        $this->assertEquals('Poblacion', $order->shipping_barangay);
+        $this->assertEquals('Leave at lobby', $order->customer_note);
+        $this->assertEquals('Happy birthday', $order->gift_message);
+        $this->assertTrue((bool) $order->hide_prices);
+    }
+
+    public function test_checkout_recalculates_fees_for_address(): void
+    {
+        $this->allowMakati();
+        $product = $this->createProduct(['price' => 1000]);
+        $this->post('/cart', ['product_id' => $product->id, 'quantity' => 1]);
+
+        $this->get('/checkout?province=Metro+Manila&city=Makati')->assertInertia(fn (Assert $page) => $page
+            ->component('store/checkout')
+            ->where('cart.totals.delivery_fee', 80)
+        );
     }
 }

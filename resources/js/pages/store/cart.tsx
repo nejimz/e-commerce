@@ -1,72 +1,112 @@
 import StoreLayout from '@/layouts/store-layout';
 import { EmptyState } from '@/components/empty-state';
-import { formatMoney } from '@/components/product-card';
+import { QuantityStepper } from '@/components/store/quantity-stepper';
+import { ShopBreadcrumb } from '@/components/store/shop-breadcrumb';
+import { ShopButton } from '@/components/store/shop-button';
+import { ShopInput } from '@/components/store/shop-input';
+import { formatMoney } from '@/lib/money';
+import type { CartPayload } from '@/types/cart';
 import { Link, router, useForm } from '@inertiajs/react';
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
 
-export default function CartPage({ cart }: { cart: { items: any[]; totals: any } }) {
+export default function CartPage({ cart }: { cart: CartPayload }) {
     const coupon = useForm({ code: '' });
-    const area = useForm({ province: 'Metro Manila', city: '', postal_code: '' });
-    const timers = useRef<Record<number, number>>({});
+    const [busyId, setBusyId] = useState<number | null>(null);
+    const threshold = Number(cart.totals.free_delivery_threshold || 0);
+    const remaining = threshold > 0 ? Math.max(0, threshold - Number(cart.totals.subtotal || 0)) : 0;
+    const progress = threshold > 0 ? Math.min(100, (Number(cart.totals.subtotal || 0) / threshold) * 100) : 0;
 
-    useEffect(() => () => Object.values(timers.current).forEach((t) => window.clearTimeout(t)), []);
+    const patchQty = (id: number, quantity: number) => {
+        setBusyId(id);
+        router.patch(`/cart/${id}`, { quantity }, { preserveScroll: true, onFinish: () => setBusyId(null) });
+    };
 
-    const setQty = (id: number, quantity: number) => {
-        window.clearTimeout(timers.current[id]);
-        timers.current[id] = window.setTimeout(() => {
-            router.patch(`/cart/${id}`, { quantity }, { preserveScroll: true });
-        }, 300);
+    const removeItem = (id: number) => {
+        setBusyId(id);
+        router.delete(`/cart/${id}`, { preserveScroll: true, onFinish: () => setBusyId(null) });
     };
 
     return (
         <StoreLayout title="Cart">
-            <h1 className="text-3xl font-semibold">Your cart</h1>
+            <ShopBreadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Cart' }]} />
+            <p className="shop-caption uppercase tracking-[0.16em] text-[var(--shop-text-muted)]">Bag</p>
+            <h1 className="shop-h1 mt-2">Your cart</h1>
             {cart.items.length === 0 ? (
-                <div className="mt-6">
+                <div className="mt-8">
                     <EmptyState title="Your cart is empty" body="Browse the shop and add something you like.">
-                        <Link href="/shop" className="inline-flex h-11 items-center rounded-md bg-[var(--shop-accent)] px-4 text-[var(--shop-on-accent)]">
-                            Continue shopping
-                        </Link>
+                        <ShopButton asChild>
+                            <Link href="/shop">Continue shopping</Link>
+                        </ShopButton>
                     </EmptyState>
                 </div>
             ) : (
-                <div className="mt-6 grid gap-8 md:grid-cols-[1fr_320px]">
-                    <div className="space-y-4">
+                <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_360px]">
+                    <div className="divide-y divide-[var(--shop-border)] border-y border-[var(--shop-border)]">
                         {cart.items.map((item) => (
-                            <div key={item.id} className="flex gap-4 rounded-[10px] bg-[var(--shop-surface)] p-4">
-                                {item.image && <img src={item.image} alt="" className="h-20 w-20 rounded object-cover" />}
-                                <div className="flex-1">
-                                    <Link href={`/products/${item.slug}`} className="font-medium">
-                                        {item.name}
+                            <div key={item.id} className="flex gap-4 py-5 md:gap-6">
+                                {item.image ? (
+                                    <Link href={`/products/${item.slug}`} className="h-24 w-24 shrink-0 overflow-hidden rounded-[var(--shop-radius-image)] bg-[var(--shop-surface)] md:h-28 md:w-28">
+                                        <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
                                     </Link>
-                                    {item.options && <p className="text-sm text-[var(--shop-text-muted)]">{item.options}</p>}
-                                    <p className="tabular-nums">{formatMoney(item.unit_price)}</p>
-                                    <div className="mt-2 flex items-center gap-2">
-                                        <input
-                                            type="number"
-                                            min={1}
+                                ) : (
+                                    <div className="h-24 w-24 shrink-0 rounded-[var(--shop-radius-image)] bg-[var(--shop-surface)]" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            <Link href={`/products/${item.slug}`} className="font-medium hover:text-[var(--shop-accent)]">
+                                                {item.name}
+                                            </Link>
+                                            {item.options && <p className="mt-0.5 text-sm text-[var(--shop-text-muted)]">{item.options}</p>}
+                                            <p className="mt-1 shop-price text-base">{formatMoney(item.unit_price)}</p>
+                                        </div>
+                                        <p className="hidden shop-price text-base md:block">{formatMoney(item.line_total)}</p>
+                                    </div>
+                                    <div className="mt-3 flex flex-wrap items-center gap-4">
+                                        <QuantityStepper
+                                            value={item.quantity}
                                             max={item.stock}
-                                            defaultValue={item.quantity}
-                                            className="h-10 w-20 rounded-md border border-[var(--shop-border)] px-2"
-                                            onChange={(e) => setQty(item.id, Number(e.target.value))}
+                                            disabled={busyId === item.id}
+                                            onChange={(qty) => patchQty(item.id, qty)}
                                         />
-                                        <button type="button" className="text-sm text-[var(--shop-danger)]" onClick={() => router.delete(`/cart/${item.id}`)}>
+                                        <button
+                                            type="button"
+                                            className="text-sm text-[var(--shop-text-muted)] underline-offset-2 hover:text-[var(--shop-danger)] hover:underline disabled:opacity-45"
+                                            disabled={busyId === item.id}
+                                            onClick={() => removeItem(item.id)}
+                                        >
                                             Remove
                                         </button>
                                     </div>
+                                    <p className="mt-2 shop-price text-base md:hidden">{formatMoney(item.line_total)}</p>
                                 </div>
-                                <div className="tabular-nums">{formatMoney(item.line_total)}</div>
                             </div>
                         ))}
                     </div>
-                    <aside className="h-fit space-y-4 rounded-[10px] bg-[var(--shop-surface)] p-4">
-                        <h2 className="font-medium">Summary</h2>
+                    <aside className="h-fit space-y-5 rounded-[var(--shop-radius-card)] bg-[var(--shop-surface)] p-6 lg:sticky lg:top-24">
+                        <h2 className="shop-h3">Summary</h2>
+                        {threshold > 0 && (
+                            <div>
+                                <p className="text-sm text-[var(--shop-text-muted)]">
+                                    {remaining > 0
+                                        ? `${formatMoney(remaining)} away from free delivery`
+                                        : 'You have free delivery on this order.'}
+                                </p>
+                                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--shop-bg)]">
+                                    <div className="h-full rounded-full bg-[var(--shop-accent)]" style={{ width: `${progress}%` }} />
+                                </div>
+                            </div>
+                        )}
                         <Row label="Subtotal" value={cart.totals.subtotal} />
                         {cart.totals.discount > 0 && <Row label="Discount" value={-cart.totals.discount} />}
                         <Row label="Delivery" value={cart.totals.delivery_fee} />
                         {cart.totals.packing_fee > 0 && <Row label="Packing" value={cart.totals.packing_fee} />}
-                        <Row label="Total" value={cart.totals.total} bold />
-                        {cart.totals.vat_amount > 0 && <p className="text-xs text-[var(--shop-text-muted)]">Includes VAT of {formatMoney(cart.totals.vat_amount)}</p>}
+                        <div className="border-t border-[var(--shop-border)] pt-3">
+                            <Row label="Total" value={cart.totals.total} bold />
+                        </div>
+                        {cart.totals.vat_amount > 0 && (
+                            <p className="text-xs text-[var(--shop-text-muted)]">Includes VAT of {formatMoney(cart.totals.vat_amount)}</p>
+                        )}
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
@@ -74,10 +114,15 @@ export default function CartPage({ cart }: { cart: { items: any[]; totals: any }
                             }}
                             className="flex gap-2"
                         >
-                            <input value={coupon.data.code} onChange={(e) => coupon.setData('code', e.target.value)} placeholder="Promo code" className="h-11 flex-1 rounded-md border border-[var(--shop-border)] px-3" />
-                            <button className="h-11 rounded-md border border-[var(--shop-border)] px-3" type="submit">
-                                Apply
-                            </button>
+                            <ShopInput
+                                value={coupon.data.code}
+                                onChange={(e) => coupon.setData('code', e.target.value)}
+                                placeholder="Promo code"
+                                disabled={coupon.processing}
+                            />
+                            <ShopButton type="submit" variant="secondary" disabled={coupon.processing}>
+                                {coupon.processing ? 'Applying…' : 'Apply'}
+                            </ShopButton>
                         </form>
                         {cart.totals.coupon_code && (
                             <button type="button" className="text-sm underline" onClick={() => router.delete('/cart/coupon')}>
@@ -85,24 +130,12 @@ export default function CartPage({ cart }: { cart: { items: any[]; totals: any }
                             </button>
                         )}
                         {coupon.errors.coupon && <p className="text-sm text-[var(--shop-danger)]">{coupon.errors.coupon}</p>}
-                        <Link href="/checkout" className="flex h-12 items-center justify-center rounded-md bg-[var(--shop-accent)] font-medium text-[var(--shop-on-accent)]">
-                            Checkout
-                        </Link>
-                        <form
-                            className="space-y-2 border-t border-[var(--shop-border)] pt-4"
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                area.post('/deliverable');
-                            }}
-                        >
-                            <p className="text-sm font-medium">Check if we deliver</p>
-                            <input value={area.data.province} onChange={(e) => area.setData('province', e.target.value)} className="h-11 w-full rounded-md border border-[var(--shop-border)] px-3" />
-                            <input value={area.data.city} onChange={(e) => area.setData('city', e.target.value)} placeholder="City" className="h-11 w-full rounded-md border border-[var(--shop-border)] px-3" />
-                            <button className="h-11 w-full rounded-md border border-[var(--shop-border)]" type="submit">
-                                Check area
-                            </button>
-                            {area.errors.area && <p className="text-sm text-[var(--shop-danger)]">{area.errors.area}</p>}
-                        </form>
+                        <ShopButton asChild size="lg">
+                            <Link href="/checkout">Checkout</Link>
+                        </ShopButton>
+                        <p className="text-sm leading-relaxed text-[var(--shop-text-muted)]">
+                            We deliver to serviceable Metro Manila addresses — confirmed at checkout.
+                        </p>
                     </aside>
                 </div>
             )}
@@ -112,9 +145,9 @@ export default function CartPage({ cart }: { cart: { items: any[]; totals: any }
 
 function Row({ label, value, bold }: { label: string; value: number; bold?: boolean }) {
     return (
-        <div className={`flex justify-between tabular-nums ${bold ? 'font-semibold' : ''}`}>
+        <div className={`flex justify-between tabular-nums ${bold ? 'text-base font-semibold' : 'text-sm text-[var(--shop-text-muted)]'}`}>
             <span>{label}</span>
-            <span>{formatMoney(value)}</span>
+            <span className={bold ? 'text-[var(--shop-text)]' : undefined}>{formatMoney(value)}</span>
         </div>
     );
 }

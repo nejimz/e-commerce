@@ -160,6 +160,7 @@
 
 @layer components {
     .shop-display {
+        font-family: var(--shop-display-font);
         font-size: var(--shop-display);
         font-weight: 600;
         line-height: 1.15;
@@ -167,6 +168,7 @@
     }
 
     .shop-h1 {
+        font-family: var(--shop-display-font);
         font-size: var(--shop-h1);
         font-weight: 600;
         line-height: 1.2;
@@ -174,10 +176,67 @@
     }
 
     .shop-h2 {
+        font-family: var(--shop-display-font);
         font-size: var(--shop-h2);
         font-weight: 600;
         line-height: 1.25;
         letter-spacing: -0.02em;
+    }
+
+    .shop-container {
+        margin-inline: auto;
+        width: 100%;
+        max-width: 80rem;
+        padding-inline: 1rem;
+    }
+
+    .shop-icon-btn {
+        display: inline-flex;
+        height: 2.75rem;
+        width: 2.75rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--shop-radius-pill);
+        color: var(--shop-text);
+        transition: background-color var(--shop-duration-micro) var(--shop-ease);
+    }
+
+    .shop-icon-btn:hover,
+    .shop-icon-btn:focus-visible {
+        background: var(--shop-bg);
+    }
+
+    .shop-nav-link {
+        position: relative;
+        color: var(--shop-text-muted);
+        transition: color var(--shop-duration-micro) var(--shop-ease);
+    }
+
+    .shop-nav-link:hover,
+    .shop-nav-link[data-active='true'] {
+        color: var(--shop-text);
+    }
+
+    .shop-nav-link::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -6px;
+        height: 1px;
+        background: currentColor;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--shop-duration) var(--shop-ease);
+    }
+
+    .shop-nav-link:hover::after,
+    .shop-nav-link[data-active='true']::after {
+        transform: scaleX(1);
+    }
+
+    .shop-cart-badge {
+        animation: shop-badge-pop var(--shop-duration-micro) var(--shop-ease);
     }
 
     .shop-h3 {
@@ -234,6 +293,10 @@
 }
 
 @media (min-width: 768px) {
+    .shop-container {
+        padding-inline: 1.5rem;
+    }
+
     .shop-section {
         margin-top: var(--shop-space-20);
     }
@@ -258,5 +321,14 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
+    }
+}
+
+@keyframes shop-badge-pop {
+    from {
+        transform: scale(0.7);
+    }
+    to {
+        transform: scale(1);
     }
 }
