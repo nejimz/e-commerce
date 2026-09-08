@@ -6,6 +6,7 @@ import { QuantityStepper } from '@/components/store/quantity-stepper';
 import { ShopBreadcrumb } from '@/components/store/shop-breadcrumb';
 import { ShopButton } from '@/components/store/shop-button';
 import { ShopSectionHeader } from '@/components/store/shop-section-header';
+import { CatalogSeoHead, type CatalogSeo } from '@/components/store/catalog-seo-head';
 import { formatMoney } from '@/lib/money';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { RefreshCcw, Truck } from 'lucide-react';
@@ -33,7 +34,12 @@ type ProductDetail = {
     slug: string;
     sku: string;
     brand: { name: string; slug: string } | null;
-    category: { name: string; slug: string } | null;
+    category: {
+        name: string;
+        slug: string;
+        path: string;
+        parent?: { name: string; slug: string; path: string } | null;
+    } | null;
     price: number;
     compare_at_price: number | null;
     short_description: string | null;
@@ -45,9 +51,10 @@ type ProductDetail = {
     variants: Variant[];
     meta_title: string;
     meta_description: string | null;
+    canonical?: string;
 };
 
-export default function ProductPage({ product, related, jsonLd }: { product: ProductDetail; related: ProductCardData[]; jsonLd: object }) {
+export default function ProductPage({ product, related, jsonLd, seo }: { product: ProductDetail; related: ProductCardData[]; jsonLd: object; seo?: CatalogSeo }) {
     const [selected, setSelected] = useState<Record<number, number>>({});
     const variant = useMemo(() => {
         if (!product.has_variants) {
@@ -133,17 +140,25 @@ export default function ProductPage({ product, related, jsonLd }: { product: Pro
     const ctaDisabled = oos || comboMissing || form.processing;
 
     return (
-        <StoreLayout title={product.meta_title}>
-            <Head>
-                <meta name="description" content={product.meta_description || ''} />
-                <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-            </Head>
+        <StoreLayout title={seo?.title || product.meta_title}>
+            {seo ? (
+                <CatalogSeoHead seo={seo} />
+            ) : (
+                <Head>
+                    <meta name="description" content={product.meta_description || ''} />
+                    {product.canonical ? <link rel="canonical" href={product.canonical} /> : null}
+                    <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+                </Head>
+            )}
             <ShopBreadcrumb
                 items={[
                     { label: 'Home', href: '/' },
                     { label: 'Shop', href: '/shop' },
+                    ...(product.category?.parent
+                        ? [{ label: product.category.parent.name, href: product.category.parent.path }]
+                        : []),
                     ...(product.category
-                        ? [{ label: product.category.name, href: `/shop?category=${product.category.slug}` }]
+                        ? [{ label: product.category.name, href: product.category.path }]
                         : []),
                     { label: product.name },
                 ]}
@@ -264,7 +279,7 @@ export default function ProductPage({ product, related, jsonLd }: { product: Pro
 
             {related.length > 0 && (
                 <section className="shop-section">
-                    <ShopSectionHeader title="You may also like" href={product.category ? `/shop?category=${product.category.slug}` : '/shop'} />
+                    <ShopSectionHeader title="You may also like" href={product.category?.path || '/shop'} />
                     <ProductGrid>
                         {related.map((p) => (
                             <ProductCard key={p.id} product={p} />

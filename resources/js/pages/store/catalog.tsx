@@ -13,13 +13,15 @@ import {
     facetQueriesEqual,
     formatPriceFilterLabel,
     productCountLabel,
+    type CatalogListing,
     type CatalogQuery,
     type FacetOption,
     type PriceBounds,
 } from '@/components/store/catalog-filters';
+import { CatalogSeoHead, type CatalogSeo } from '@/components/store/catalog-seo-head';
 import { EmptyState } from '@/components/empty-state';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Head, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -75,13 +77,37 @@ function CategoryPill({
     );
 }
 
+type ListingCategory = {
+    name: string;
+    slug: string;
+    description?: string | null;
+    path: string;
+    image?: string | null;
+    parent?: { name: string; slug: string; path: string } | null;
+};
+
+type ListingBrand = {
+    name: string;
+    slug: string;
+    description?: string | null;
+    logo?: string | null;
+};
+
 export default function Catalog({
+    listing = 'shop',
+    category: listingCategory = null,
+    brand: listingBrand = null,
+    seo,
     products,
     filters,
     categories,
     brands,
     price_bounds = null,
 }: {
+    listing?: CatalogListing;
+    category?: ListingCategory | null;
+    brand?: ListingBrand | null;
+    seo: CatalogSeo;
     products: { data: ProductCardData[]; meta: { current_page: number; last_page: number; total: number } };
     filters: CatalogQuery;
     categories: FacetOption[];
@@ -102,14 +128,10 @@ export default function Catalog({
         return next;
     }, [filters]);
 
+    const hrefOpts = { listing, brandSlug: listingBrand?.slug, categories };
+
     const apply = (next: CatalogQuery) => {
-        const payload: Record<string, string> = {};
-        Object.entries(next).forEach(([k, v]) => {
-            if (v && k !== 'page') {
-                payload[k] = v;
-            }
-        });
-        router.get('/shop', payload, {
+        router.visit(catalogHref(next, undefined, hrefOpts), {
             preserveState: true,
             preserveScroll: true,
             onStart: () => setPending(true),
@@ -122,15 +144,33 @@ export default function Catalog({
         if (query.sort) {
             next.sort = query.sort;
         }
+        if (listing === 'category' && query.category) {
+            next.category = query.category;
+        }
+        if (listing === 'brand' && query.brand) {
+            next.brand = query.brand;
+        }
         apply(next);
     };
 
-    const count = activeFilterCount(query);
-    const category = categories.find((c) => c.slug === query.category);
+    const locked = listing === 'brand' ? ['brand'] : listing === 'category' ? ['category'] : [];
+    const count = activeFilterCount(query, locked);
+    const selectedFacet = categories.find((c) => c.slug === query.category) ?? null;
     const crumbs = [
         { label: 'Home', href: '/' },
         { label: 'Shop', href: '/shop' },
-        ...(category ? [{ label: category.name }] : query.q ? [{ label: `Results for “${query.q}”` }] : []),
+        ...(listingBrand
+            ? [{ label: listingBrand.name }]
+            : listingCategory?.parent
+              ? [
+                    { label: listingCategory.parent.name, href: listingCategory.parent.path },
+                    { label: listingCategory.name },
+                ]
+              : listingCategory
+                ? [{ label: listingCategory.name }]
+                : query.q
+                  ? [{ label: `Results for “${query.q}”` }]
+                  : []),
     ];
 
     const chips = useMemo(() => {
@@ -138,11 +178,11 @@ export default function Catalog({
         if (query.q) {
             items.push({ key: 'q', label: `“${query.q}”` });
         }
-        if (category) {
-            items.push({ key: 'category', label: category.name });
+        if (selectedFacet && listing !== 'category') {
+            items.push({ key: 'category', label: selectedFacet.name });
         }
-        const brand = brands.find((b) => b.slug === query.brand);
-        if (brand) {
+        const brand = listingBrand ?? brands.find((b) => b.slug === query.brand);
+        if (brand && listing !== 'brand') {
             items.push({ key: 'brand', label: brand.name });
         }
         if (query.min_price || query.max_price) {
@@ -153,7 +193,7 @@ export default function Catalog({
         }
 
         return items;
-    }, [query, category, brands]);
+    }, [query, selectedFacet, brands, listing, listingBrand]);
 
     const removeChip = (key: string) => {
         const next = { ...query };
@@ -169,7 +209,7 @@ export default function Catalog({
     const setSort = (sort: string) => apply({ ...query, sort });
 
     const topCategories = categories.filter((c) => !c.parent_id);
-    const railParentId = category ? (category.parent_id ?? category.id) : null;
+    const railParentId = selectedFacet ? (selectedFacet.parent_id ?? selectedFacet.id) : null;
     const railChildren = railParentId ? categories.filter((c) => c.parent_id === railParentId) : [];
 
     const openSheet = (open: boolean) => {
@@ -195,19 +235,37 @@ export default function Catalog({
         if (query.sort) {
             next.sort = query.sort;
         }
+        if (listing === 'category' && query.category) {
+            next.category = query.category;
+        }
+        if (listing === 'brand' && query.brand) {
+            next.brand = query.brand;
+        }
         setDraft(next);
     };
 
     const draftMatches = facetQueriesEqual(query, draft);
 
     return (
-        <StoreLayout title="Shop">
-            <Head title="Shop" />
+        <StoreLayout title={seo.title}>
+            <CatalogSeoHead seo={seo} />
             <ShopBreadcrumb items={crumbs} />
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <p className="shop-caption uppercase tracking-[0.16em] text-[var(--shop-text-muted)]">Catalog</p>
-                    <h1 className="shop-h1 mt-2">{category ? category.name : query.q ? `Results for “${query.q}”` : 'Shop'}</h1>
+                    {listingBrand?.logo ? (
+                        <img src={listingBrand.logo} alt="" className="mb-4 h-12 w-auto" />
+                    ) : null}
+                    <p className="shop-caption uppercase tracking-[0.16em] text-[var(--shop-text-muted)]">
+                        {listing === 'brand' ? 'Brand' : listing === 'category' ? 'Category' : 'Catalog'}
+                    </p>
+                    <h1 className="shop-h1 mt-2">
+                        {listingBrand?.name || listingCategory?.name || (query.q ? `Results for “${query.q}”` : 'Shop')}
+                    </h1>
+                    {(listingBrand?.description || listingCategory?.description) && (
+                        <p className="shop-body-lg mt-4 max-w-2xl text-[var(--shop-text-muted)]">
+                            {listingBrand?.description || listingCategory?.description}
+                        </p>
+                    )}
                     <p className="mt-2 text-sm text-[var(--shop-text-muted)]">{productCountLabel(products.meta.total)}</p>
                 </div>
                 <div className="hidden min-[992px]:block">
@@ -224,7 +282,7 @@ export default function Catalog({
                         {topCategories.map((c) => (
                             <CategoryPill
                                 key={c.id}
-                                active={query.category === c.slug || category?.parent_id === c.id}
+                                active={query.category === c.slug || selectedFacet?.parent_id === c.id}
                                 onClick={() => apply({ ...query, category: c.slug })}
                             >
                                 {c.name}
@@ -315,7 +373,8 @@ export default function Catalog({
                             brands={brands}
                             onChange={apply}
                             includeSearch={false}
-                            includeCategory={false}
+                            includeCategory={listing === 'brand'}
+                            includeBrand={listing !== 'brand'}
                             priceBounds={price_bounds}
                         />
                     </div>
@@ -343,7 +402,7 @@ export default function Catalog({
                     <ShopPagination
                         current={products.meta.current_page}
                         last={products.meta.last_page}
-                        buildHref={(page) => catalogHref(query, page)}
+                        buildHref={(page) => catalogHref(query, page, hrefOpts)}
                     />
                 </div>
             </div>
@@ -363,6 +422,8 @@ export default function Catalog({
                             categories={categories}
                             brands={brands}
                             onChange={setDraft}
+                            includeCategory={true}
+                            includeBrand={listing !== 'brand'}
                             priceBounds={price_bounds}
                         />
                     </div>

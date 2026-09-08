@@ -88,15 +88,19 @@ export default function StoreLayout({
                         {storeName}
                     </Link>
                     <nav className="hidden min-w-0 flex-1 items-center gap-6 text-sm md:flex">
-                        <Link href="/shop" className="shop-nav-link" data-active={url.startsWith('/shop') ? 'true' : undefined}>
+                        <Link href="/shop" className="shop-nav-link" data-active={url === '/shop' || url.startsWith('/shop?') ? 'true' : undefined}>
                             Shop
                         </Link>
                         {desktopCategories.map((c) => (
                             <Link
                                 key={c.id}
-                                href={`/shop?category=${c.slug}`}
+                                href={`/shop/${c.slug}`}
                                 className="shop-nav-link truncate"
-                                data-active={url.includes(`category=${c.slug}`) ? 'true' : undefined}
+                                data-active={
+                                    url === `/shop/${c.slug}` || url.startsWith(`/shop/${c.slug}/`) || url.startsWith(`/shop/${c.slug}?`)
+                                        ? 'true'
+                                        : undefined
+                                }
                             >
                                 {c.name}
                             </Link>
@@ -156,7 +160,7 @@ export default function StoreLayout({
                         {navCategories.map((c) => (
                             <Link
                                 key={c.id}
-                                href={`/shop?category=${c.slug}`}
+                                href={`/shop/${c.slug}`}
                                 className="flex min-h-12 items-center border-b border-[var(--shop-border)] text-[var(--shop-text-muted)]"
                                 onClick={() => setMenuOpen(false)}
                             >
@@ -201,7 +205,7 @@ export default function StoreLayout({
                             </li>
                             {navCategories.map((c) => (
                                 <li key={c.id}>
-                                    <Link href={`/shop?category=${c.slug}`} className="hover:text-[var(--shop-text)]">
+                                    <Link href={`/shop/${c.slug}`} className="hover:text-[var(--shop-text)]">
                                         {c.name}
                                     </Link>
                                 </li>

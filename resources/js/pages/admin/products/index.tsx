@@ -17,6 +17,8 @@ type ProductRow = {
     price: number;
     stock_quantity: number;
     low_stock_threshold?: number;
+    category?: { id: number; name: string } | null;
+    brand?: { id: number; name: string } | null;
 };
 
 export default function ProductsIndex({
@@ -68,6 +70,8 @@ export default function ProductsIndex({
                         <AdminThead>
                             <tr>
                                 <AdminTh>Name</AdminTh>
+                                <AdminTh>Category</AdminTh>
+                                <AdminTh>Brand</AdminTh>
                                 <AdminTh>SKU</AdminTh>
                                 <AdminTh numeric>Price</AdminTh>
                                 <AdminTh>Stock</AdminTh>
@@ -77,6 +81,8 @@ export default function ProductsIndex({
                             {products.data.map((p) => (
                                 <AdminRow key={p.id} href={`/admin/products/${p.id}/edit`}>
                                     <AdminTd className="font-medium">{p.name}</AdminTd>
+                                    <AdminTd className="text-[var(--shop-text-muted)]">{p.category?.name || '—'}</AdminTd>
+                                    <AdminTd className="text-[var(--shop-text-muted)]">{p.brand?.name || '—'}</AdminTd>
                                     <AdminTd className="text-[var(--shop-text-muted)]">{p.sku}</AdminTd>
                                     <AdminTd numeric>{formatMoney(p.price)}</AdminTd>
                                     <AdminTd>

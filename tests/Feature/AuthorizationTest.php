@@ -25,6 +25,8 @@ class AuthorizationTest extends TestCase
         $this->actingAs($staff)->get('/admin')->assertOk();
         $this->actingAs($staff)->get('/admin/settings')->assertForbidden();
         $this->actingAs($staff)->get('/admin/coupons')->assertForbidden();
+        $this->actingAs($staff)->get('/admin/categories')->assertForbidden();
+        $this->actingAs($staff)->get('/admin/brands')->assertForbidden();
     }
 
     public function test_admin_can_open_settings(): void
@@ -36,6 +38,8 @@ class AuthorizationTest extends TestCase
         $this->actingAs($admin)->get('/admin/products')->assertInertia(fn (Assert $page) => $page->component('admin/products/index')->has('products.data')->has('filters'));
         $this->actingAs($admin)->get('/admin/customers')->assertInertia(fn (Assert $page) => $page->component('admin/customers/index')->has('customers.data')->has('filters'));
         $this->actingAs($admin)->get('/admin/coupons')->assertInertia(fn (Assert $page) => $page->component('admin/coupons/index'));
+        $this->actingAs($admin)->get('/admin/categories')->assertInertia(fn (Assert $page) => $page->component('admin/categories/index')->has('categories'));
+        $this->actingAs($admin)->get('/admin/brands')->assertInertia(fn (Assert $page) => $page->component('admin/brands/index')->has('brands'));
         $this->actingAs($admin)->get('/admin/areas')->assertInertia(fn (Assert $page) => $page->component('admin/areas/index'));
         $this->actingAs($admin)->get('/admin')->assertInertia(fn (Assert $page) => $page->component('admin/dashboard')->has('stats'));
     }
@@ -48,6 +52,8 @@ class AuthorizationTest extends TestCase
         $this->actingAs($staff)->get('/admin/orders')->assertOk();
         $this->actingAs($staff)->get('/admin/products')->assertOk();
         $this->actingAs($staff)->get('/admin/customers')->assertOk();
+        $this->actingAs($staff)->get('/admin/categories')->assertForbidden();
+        $this->actingAs($staff)->get('/admin/brands')->assertForbidden();
         $this->actingAs($staff)->get('/admin/areas')->assertForbidden();
     }
 }

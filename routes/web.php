@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\BrandController as AdminBrandController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -11,13 +13,18 @@ use App\Http\Controllers\Store\AccountController;
 use App\Http\Controllers\Store\CartController;
 use App\Http\Controllers\Store\CatalogController;
 use App\Http\Controllers\Store\CheckoutController;
+use App\Http\Controllers\Store\SitemapController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CatalogController::class, 'home'])->name('home');
 Route::get('/shop', [CatalogController::class, 'index'])->middleware('throttle:search')->name('catalog');
-Route::get('/brands/{slug}', [CatalogController::class, 'brand'])->name('brands.show');
+Route::get('/shop/{category}/{subcategory}', [CatalogController::class, 'category'])->middleware('throttle:search')->name('catalog.subcategory');
+Route::get('/shop/{category}', [CatalogController::class, 'category'])->middleware('throttle:search')->name('catalog.category');
+Route::get('/brands/{slug}', [CatalogController::class, 'brand'])->middleware('throttle:search')->name('brands.show');
 Route::get('/p/{slug}', [CatalogController::class, 'page'])->name('pages.show');
 Route::get('/products/{slug}', [CatalogController::class, 'show'])->name('products.show');
+Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
 Route::post('/cart', [CartController::class, 'add'])->middleware('store.open')->name('cart.add');
@@ -74,6 +81,21 @@ Route::middleware(['auth', 'admin:staff'])->prefix('admin')->name('admin.')->gro
 });
 
 Route::middleware(['auth', 'admin:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
+    Route::get('/categories/create', [AdminCategoryController::class, 'create'])->name('categories.create');
+    Route::post('/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
+    Route::get('/categories/{category}/edit', [AdminCategoryController::class, 'edit'])->name('categories.edit');
+    Route::patch('/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
+    Route::patch('/categories/{category}/move', [AdminCategoryController::class, 'move'])->name('categories.move');
+
+    Route::get('/brands', [AdminBrandController::class, 'index'])->name('brands.index');
+    Route::get('/brands/create', [AdminBrandController::class, 'create'])->name('brands.create');
+    Route::post('/brands', [AdminBrandController::class, 'store'])->name('brands.store');
+    Route::get('/brands/{brand}/edit', [AdminBrandController::class, 'edit'])->name('brands.edit');
+    Route::patch('/brands/{brand}', [AdminBrandController::class, 'update'])->name('brands.update');
+    Route::delete('/brands/{brand}', [AdminBrandController::class, 'destroy'])->name('brands.destroy');
+
     Route::get('/coupons', [CouponController::class, 'index'])->name('coupons.index');
     Route::post('/coupons', [CouponController::class, 'store'])->name('coupons.store');
     Route::get('/areas', [DeliveryAreaController::class, 'index'])->name('areas.index');

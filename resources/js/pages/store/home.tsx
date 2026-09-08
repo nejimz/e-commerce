@@ -4,12 +4,13 @@ import { ProductGrid } from '@/components/store/product-grid';
 import { ShopButton } from '@/components/store/shop-button';
 import { ShopContainer } from '@/components/store/shop-container';
 import { ShopSectionHeader } from '@/components/store/shop-section-header';
+import { CatalogSeoHead, type CatalogSeo } from '@/components/store/catalog-seo-head';
 import { EmptyState } from '@/components/empty-state';
 import { placeholderImage, productImageSrc } from '@/lib/product-image';
-import { Head, Link } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { ArrowRight } from 'lucide-react';
 
-type CategoryTile = { id: number; name: string; slug: string; image?: string | null };
+type CategoryTile = { id: number; name: string; slug: string; path?: string; image?: string | null };
 
 export default function Home({
     featured,
@@ -17,21 +18,21 @@ export default function Home({
     onSale,
     categories,
     hero,
+    seo,
 }: {
     featured: ProductCardData[];
     newArrivals: ProductCardData[];
     onSale: ProductCardData[];
     categories: CategoryTile[];
     hero?: ProductCardData | null;
+    seo?: CatalogSeo | null;
 }) {
     const hasProducts = featured.length + newArrivals.length + onSale.length > 0;
     const heroProduct = hero ?? featured[0] ?? newArrivals[0];
 
     return (
-        <StoreLayout title="Home" flush>
-            <Head>
-                <meta name="description" content="Shop apparel and home goods. Prices in PHP." />
-            </Head>
+        <StoreLayout title={seo?.title || 'Home'} flush>
+            {seo ? <CatalogSeoHead seo={seo} /> : null}
 
             <section className="border-b border-[var(--shop-border)] bg-[var(--shop-surface)]">
                 <ShopContainer className="grid items-center gap-10 py-10 md:grid-cols-2 md:gap-16 md:py-16">
@@ -111,7 +112,7 @@ export default function Home({
                             {categories.map((c) => (
                                 <Link
                                     key={c.id}
-                                    href={`/shop?category=${c.slug}`}
+                                    href={c.path || `/shop/${c.slug}`}
                                     className="group relative aspect-[4/5] overflow-hidden rounded-[var(--shop-radius-card)] bg-[var(--shop-surface)]"
                                 >
                                     <img

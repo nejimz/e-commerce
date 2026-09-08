@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils';
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
+    FolderTree,
     LayoutDashboard,
     LogOut,
     MapPin,
@@ -14,6 +15,7 @@ import {
     Settings,
     ShoppingBag,
     Store,
+    Tag,
     TicketPercent,
     Users,
     type LucideIcon,
@@ -38,6 +40,8 @@ const operations: NavItem[] = [
 ];
 
 const storeNav: NavItem[] = [
+    { href: '/admin/categories', label: 'Categories', icon: FolderTree },
+    { href: '/admin/brands', label: 'Brands', icon: Tag },
     { href: '/admin/coupons', label: 'Promos', icon: TicketPercent },
     { href: '/admin/areas', label: 'Delivery', icon: MapPin },
     { href: '/admin/settings', label: 'Settings', icon: Settings },

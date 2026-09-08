@@ -148,6 +148,7 @@ export function CatalogFilterFields({
     onChange,
     includeSearch = true,
     includeCategory = true,
+    includeBrand = true,
     idPrefix = '',
     priceBounds = null,
 }: {
@@ -157,6 +158,7 @@ export function CatalogFilterFields({
     onChange: (next: CatalogQuery) => void;
     includeSearch?: boolean;
     includeCategory?: boolean;
+    includeBrand?: boolean;
     idPrefix?: string;
     priceBounds?: PriceBounds;
 }) {
@@ -272,18 +274,20 @@ export function CatalogFilterFields({
                     </div>
                 </FilterGroup>
             )}
-            <FilterGroup title="Brand">
-                <div className="max-h-56 space-y-0.5 overflow-y-auto pr-1">
-                    <FacetRow active={!filters.brand} onClick={() => patch('brand', '')}>
-                        All
-                    </FacetRow>
-                    {brands.map((b) => (
-                        <FacetRow key={b.id} active={filters.brand === b.slug} count={b.count} onClick={() => patch('brand', b.slug)}>
-                            {b.name}
+            {includeBrand && (
+                <FilterGroup title="Brand">
+                    <div className="max-h-56 space-y-0.5 overflow-y-auto pr-1">
+                        <FacetRow active={!filters.brand} onClick={() => patch('brand', '')}>
+                            All
                         </FacetRow>
-                    ))}
-                </div>
-            </FilterGroup>
+                        {brands.map((b) => (
+                            <FacetRow key={b.id} active={filters.brand === b.slug} count={b.count} onClick={() => patch('brand', b.slug)}>
+                                {b.name}
+                            </FacetRow>
+                        ))}
+                    </div>
+                </FilterGroup>
+            )}
             <FilterGroup title="Price">
                 {presets.length > 0 && (
                     <div className="mb-3 flex flex-wrap gap-1.5">
@@ -340,14 +344,52 @@ export function CatalogFilterFields({
     );
 }
 
-export function activeFilterCount(filters: CatalogQuery): number {
-    return FACET_KEYS.filter((key) => Boolean(filters[key])).length;
+export function activeFilterCount(filters: CatalogQuery, omit: string[] = []): number {
+    const skip = new Set(omit);
+
+    return FACET_KEYS.filter((key) => Boolean(filters[key]) && !skip.has(key)).length;
 }
 
-export function catalogHref(filters: CatalogQuery, page?: number): string {
+export type CatalogListing = 'shop' | 'category' | 'brand';
+
+export function categoryPath(categories: FacetOption[], slug?: string): string {
+    if (!slug) {
+        return '/shop';
+    }
+    const cat = categories.find((c) => c.slug === slug);
+    if (!cat) {
+        return `/shop/${slug}`;
+    }
+    if (cat.parent_id) {
+        const parent = categories.find((c) => c.id === cat.parent_id);
+        if (parent) {
+            return `/shop/${parent.slug}/${cat.slug}`;
+        }
+    }
+
+    return `/shop/${cat.slug}`;
+}
+
+export function catalogHref(
+    filters: CatalogQuery,
+    page?: number,
+    opts?: { listing?: CatalogListing; brandSlug?: string; categories?: FacetOption[] },
+): string {
+    const listing = opts?.listing ?? 'shop';
+    const omit = new Set(['page']);
+    let base = '/shop';
+
+    if (listing === 'brand' && opts?.brandSlug) {
+        base = `/brands/${opts.brandSlug}`;
+        omit.add('brand');
+    } else if (filters.category) {
+        base = categoryPath(opts?.categories ?? [], filters.category);
+        omit.add('category');
+    }
+
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => {
-        if (v && k !== 'page') {
+        if (v && !omit.has(k)) {
             params.set(k, v);
         }
     });
@@ -356,7 +398,7 @@ export function catalogHref(filters: CatalogQuery, page?: number): string {
     }
     const qs = params.toString();
 
-    return qs ? `/shop?${qs}` : '/shop';
+    return qs ? `${base}?${qs}` : base;
 }
 
 export function productCountLabel(total: number): string {

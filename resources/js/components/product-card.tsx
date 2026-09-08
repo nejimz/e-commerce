@@ -11,6 +11,7 @@ export type ProductCardData = {
     name: string;
     slug: string;
     brand?: string | null;
+    brand_slug?: string | null;
     price: number;
     compare_at_price?: number | null;
     stock: number;
@@ -103,7 +104,16 @@ export function ProductCard({ product }: { product: ProductCardData }) {
                 </div>
             </div>
             <div className="space-y-1 pt-3">
-                {product.brand && <p className="shop-caption uppercase tracking-[0.12em] text-[var(--shop-text-muted)]">{product.brand}</p>}
+                {product.brand && product.brand_slug ? (
+                    <Link
+                        href={`/brands/${product.brand_slug}`}
+                        className="shop-caption uppercase tracking-[0.12em] text-[var(--shop-text-muted)] hover:text-[var(--shop-text)]"
+                    >
+                        {product.brand}
+                    </Link>
+                ) : product.brand ? (
+                    <p className="shop-caption uppercase tracking-[0.12em] text-[var(--shop-text-muted)]">{product.brand}</p>
+                ) : null}
                 <Link href={href} className="shop-h4 line-clamp-2 hover:text-[var(--shop-accent)]">
                     {product.name}
                 </Link>

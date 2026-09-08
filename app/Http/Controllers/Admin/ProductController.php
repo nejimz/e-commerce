@@ -7,8 +7,8 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
-use App\Models\ProductOption;
 use App\Models\ProductVariant;
+use App\Services\ImagePipelineService;
 use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -34,8 +34,8 @@ class ProductController extends Controller
     {
         return Inertia::render('admin/products/form', [
             'product' => null,
-            'categories' => Category::query()->orderBy('name')->get(),
-            'brands' => Brand::query()->orderBy('name')->get(),
+            'categories' => $this->catalogCategories(),
+            'brands' => $this->catalogBrands(),
         ]);
     }
 
@@ -54,8 +54,8 @@ class ProductController extends Controller
 
         return Inertia::render('admin/products/form', [
             'product' => $product,
-            'categories' => Category::query()->orderBy('name')->get(),
-            'brands' => Brand::query()->orderBy('name')->get(),
+            'categories' => $this->catalogCategories($product->category_id),
+            'brands' => $this->catalogBrands($product->brand_id),
         ]);
     }
 
@@ -89,7 +89,7 @@ class ProductController extends Controller
     public function storeImage(Request $request, Product $product)
     {
         $request->validate(['image' => 'required|image|max:2048']);
-        $stored = app(\App\Services\ImagePipelineService::class)->storeProductImage($request->file('image'));
+        $stored = app(ImagePipelineService::class)->storeProductImage($request->file('image'));
         ProductImage::query()->create([
             'product_id' => $product->id,
             'path' => $stored['path'],
@@ -121,5 +121,61 @@ class ProductController extends Controller
             'meta_title' => 'nullable|string|max:70',
             'meta_description' => 'nullable|string|max:160',
         ]);
+    }
+
+    /**
+     * @return list<array{id: int, name: string, parent_id: int|null, parent_name: string|null, is_active: bool}>
+     */
+    private function catalogCategories(?int $keepId = null): array
+    {
+        $all = Category::query()
+            ->with('parent:id,name')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'parent_id', 'is_active']);
+
+        $parents = $all->whereNull('parent_id');
+        $ordered = collect();
+        foreach ($parents as $parent) {
+            $ordered->push($parent);
+            foreach ($all->where('parent_id', $parent->id) as $child) {
+                $ordered->push($child);
+            }
+        }
+        foreach ($all as $category) {
+            if ($category->parent_id && ! $ordered->contains('id', $category->id)) {
+                $ordered->push($category);
+            }
+        }
+
+        return $ordered
+            ->filter(fn (Category $category) => $category->is_active || $category->id === $keepId)
+            ->map(fn (Category $category) => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'parent_id' => $category->parent_id,
+                'parent_name' => $category->parent?->name,
+                'is_active' => $category->is_active,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{id: int, name: string, is_active: bool}>
+     */
+    private function catalogBrands(?int $keepId = null): array
+    {
+        return Brand::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'is_active'])
+            ->filter(fn (Brand $brand) => $brand->is_active || $brand->id === $keepId)
+            ->map(fn (Brand $brand) => [
+                'id' => $brand->id,
+                'name' => $brand->name,
+                'is_active' => $brand->is_active,
+            ])
+            ->values()
+            ->all();
     }
 }

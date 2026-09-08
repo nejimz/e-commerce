@@ -13,8 +13,8 @@ export default function ProductForm({
     brands,
 }: {
     product: any | null;
-    categories: { id: number; name: string }[];
-    brands: { id: number; name: string }[];
+    categories: { id: number; name: string; parent_id: number | null; parent_name: string | null; is_active: boolean }[];
+    brands: { id: number; name: string; is_active: boolean }[];
 }) {
     const form = useForm({
         name: product?.name || '',
@@ -59,25 +59,38 @@ export default function ProductForm({
                         <AdminField label="SKU" htmlFor="sku" error={form.errors.sku}>
                             <AdminInput id="sku" value={form.data.sku} onChange={(e) => form.setData('sku', e.target.value)} />
                         </AdminField>
-                        <AdminField label="Category" htmlFor="category_id" error={form.errors.category_id}>
+                        <AdminField
+                            label="Category"
+                            htmlFor="category_id"
+                            error={form.errors.category_id}
+                            hint={categories.length === 0 ? 'Create a category first.' : undefined}
+                        >
                             <AdminSelect
                                 id="category_id"
                                 value={form.data.category_id}
                                 onChange={(e) => form.setData('category_id', e.target.value)}
                             >
+                                {categories.length === 0 && <option value="">No categories</option>}
                                 {categories.map((c) => (
                                     <option key={c.id} value={c.id}>
-                                        {c.name}
+                                        {c.parent_name ? `${c.parent_name} / ${c.name}` : c.name}
+                                        {!c.is_active ? ' (inactive)' : ''}
                                     </option>
                                 ))}
                             </AdminSelect>
                         </AdminField>
-                        <AdminField label="Brand" htmlFor="brand_id" error={form.errors.brand_id}>
+                        <AdminField
+                            label="Brand"
+                            htmlFor="brand_id"
+                            error={form.errors.brand_id}
+                            hint={brands.length === 0 ? 'Create a brand first.' : undefined}
+                        >
                             <AdminSelect id="brand_id" value={form.data.brand_id} onChange={(e) => form.setData('brand_id', e.target.value)}>
                                 <option value="">No brand</option>
                                 {brands.map((b) => (
                                     <option key={b.id} value={b.id}>
                                         {b.name}
+                                        {!b.is_active ? ' (inactive)' : ''}
                                     </option>
                                 ))}
                             </AdminSelect>
