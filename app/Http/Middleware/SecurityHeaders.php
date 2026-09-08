@@ -33,7 +33,7 @@ class SecurityHeaders
 
         return implode('; ', [
             "default-src 'self'",
-            "img-src 'self' data: blob:{$vite}",
+            "img-src 'self' data: blob: https://picsum.photos https://fastly.picsum.photos https://i.picsum.photos{$vite}",
             "style-src 'self' 'unsafe-inline'{$vite}",
             "script-src 'self' 'unsafe-inline'{$vite}",
             "font-src 'self' data:{$vite}",

@@ -3,6 +3,7 @@ import { AdminCheckbox, AdminField, AdminInput, AdminSelect, AdminTextarea } fro
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { AdminPanel } from '@/components/admin/admin-panel';
 import AdminLayout from '@/layouts/admin-layout';
+import { productImageSrc } from '@/lib/product-image';
 import { router, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
@@ -215,7 +216,7 @@ export default function ProductForm({
                             {product.images?.map((img: { id: number; path_webp?: string; path: string }) => (
                                 <img
                                     key={img.id}
-                                    src={`/storage/${img.path_webp || img.path}`}
+                                    src={productImageSrc(`/storage/${img.path_webp || img.path}`, `${product.slug || product.name}-${img.id}`, 200)}
                                     alt={product.name}
                                     className="h-20 w-20 rounded-lg object-cover"
                                 />

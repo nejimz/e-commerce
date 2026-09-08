@@ -5,6 +5,7 @@ import { ShopBreadcrumb } from '@/components/store/shop-breadcrumb';
 import { ShopButton } from '@/components/store/shop-button';
 import { ShopInput } from '@/components/store/shop-input';
 import { formatMoney } from '@/lib/money';
+import { productImageSrc } from '@/lib/product-image';
 import type { CartPayload } from '@/types/cart';
 import { Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
@@ -44,13 +45,9 @@ export default function CartPage({ cart }: { cart: CartPayload }) {
                     <div className="divide-y divide-[var(--shop-border)] border-y border-[var(--shop-border)]">
                         {cart.items.map((item) => (
                             <div key={item.id} className="flex gap-4 py-5 md:gap-6">
-                                {item.image ? (
-                                    <Link href={`/products/${item.slug}`} className="h-24 w-24 shrink-0 overflow-hidden rounded-[var(--shop-radius-image)] bg-[var(--shop-surface)] md:h-28 md:w-28">
-                                        <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                                    </Link>
-                                ) : (
-                                    <div className="h-24 w-24 shrink-0 rounded-[var(--shop-radius-image)] bg-[var(--shop-surface)]" />
-                                )}
+                                <Link href={`/products/${item.slug}`} className="h-24 w-24 shrink-0 overflow-hidden rounded-[var(--shop-radius-image)] bg-[var(--shop-surface)] md:h-28 md:w-28">
+                                    <img src={productImageSrc(item.image, item.slug)} alt={item.name} className="h-full w-full object-cover" />
+                                </Link>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
                                         <div>

@@ -1,6 +1,7 @@
 import { ShopBadge, type ShopBadgeKind } from '@/components/store/shop-badge';
 import { ShopButton } from '@/components/store/shop-button';
 import { formatMoney } from '@/lib/money';
+import { productImageSrc } from '@/lib/product-image';
 import { Link, useForm } from '@inertiajs/react';
 
 export { formatMoney };
@@ -80,19 +81,13 @@ export function ProductCard({ product }: { product: ProductCardData }) {
         <article className="group">
             <div className="relative overflow-hidden rounded-[var(--shop-radius-image)] bg-[var(--shop-surface)]">
                 <Link href={href} className="block aspect-square overflow-hidden">
-                    {product.image ? (
-                        <img
-                            src={product.image}
-                            alt={alt}
-                            loading="lazy"
-                            decoding="async"
-                            className={`h-full w-full object-cover transition-transform duration-300 ease-[var(--shop-ease)] group-hover:scale-[1.04] ${oos ? 'opacity-45' : ''}`}
-                        />
-                    ) : (
-                        <div className="flex h-full items-center justify-center bg-[var(--shop-surface)] shop-body-sm text-[var(--shop-text-dim)]">
-                            {product.name}
-                        </div>
-                    )}
+                    <img
+                        src={productImageSrc(product.image, product.slug)}
+                        alt={alt}
+                        loading="lazy"
+                        decoding="async"
+                        className={`h-full w-full object-cover transition-transform duration-300 ease-[var(--shop-ease)] group-hover:scale-[1.04] ${oos ? 'opacity-45' : ''}`}
+                    />
                 </Link>
                 {badges.length > 0 && (
                     <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">

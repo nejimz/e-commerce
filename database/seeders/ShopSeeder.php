@@ -15,6 +15,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -105,6 +106,11 @@ class ShopSeeder extends Seeder
         $this->simpleProduct($home, $hearth, 'Stoneware Mug', 320, 45, false);
         $this->simpleProduct($shirts, $acme, 'Merino Polo', 2100, 6, true, 2400);
         $this->simpleProduct($kitchen, $hearth, 'Bamboo Cutting Board', 650, 22, false);
+
+        $this->categoryPhoto($apparel);
+        $this->categoryPhoto($home);
+        $this->categoryPhoto($shirts);
+        $this->categoryPhoto($kitchen);
     }
 
     private function simpleProduct(Category $cat, Brand $brand, string $name, float $price, int $stock, bool $featured, ?float $compare = null): Product
@@ -172,18 +178,105 @@ class ShopSeeder extends Seeder
 
     private function placeholderImage(Product $product): void
     {
-        if ($product->images()->exists()) {
+        $existing = $product->images()->orderBy('sort_order')->get();
+        $primary = $existing->firstWhere('is_primary', true) ?? $existing->first();
+        if ($primary && ! $this->isBlankStoredImage($primary->path)) {
             return;
         }
-        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"><rect fill="#F7F5F2" width="1200" height="1200"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#1F6B4A" font-size="48" font-family="sans-serif">'.htmlspecialchars($product->name).'</text></svg>';
-        $path = 'products/'.Str::slug($product->name).'.svg';
-        Storage::disk('public')->put($path, $svg);
+
+        $slug = Str::slug($product->name);
+        $stored = $this->storeRandomPhoto("products/{$slug}.jpg", $slug, 1200, 1200);
+        if (! $stored) {
+            if ($primary) {
+                return;
+            }
+            $stored = $this->storeSvgPlaceholder($slug, $product->name);
+        }
+
+        if ($primary) {
+            if ($primary->path !== $stored) {
+                Storage::disk('public')->delete($primary->path);
+            }
+            $primary->update([
+                'path' => $stored,
+                'path_webp' => null,
+                'alt_text' => $product->name,
+            ]);
+
+            return;
+        }
+
         ProductImage::query()->create([
             'product_id' => $product->id,
-            'path' => $path,
+            'path' => $stored,
             'alt_text' => $product->name,
             'is_primary' => true,
             'sort_order' => 0,
         ]);
+    }
+
+    private function categoryPhoto(Category $category): void
+    {
+        if ($category->image && ! $this->isBlankStoredImage($category->image)) {
+            return;
+        }
+
+        $path = $this->storeRandomPhoto('categories/'.$category->slug.'.jpg', 'category-'.$category->slug, 800, 1000);
+        if (! $path) {
+            return;
+        }
+
+        if ($category->image && $category->image !== $path) {
+            Storage::disk('public')->delete($category->image);
+        }
+
+        $category->update(['image' => $path]);
+    }
+
+    private function storeRandomPhoto(string $path, string $seed, int $width, int $height): ?string
+    {
+        $binary = $this->fetchRandomPhoto($seed, $width, $height);
+        if ($binary === null) {
+            return null;
+        }
+
+        Storage::disk('public')->put($path, $binary);
+
+        return $path;
+    }
+
+    private function fetchRandomPhoto(string $seed, int $width, int $height): ?string
+    {
+        if (app()->runningUnitTests()) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(20)
+                ->withHeaders(['Accept' => 'image/jpeg,image/*,*/*'])
+                ->get('https://picsum.photos/seed/'.rawurlencode($seed)."/{$width}/{$height}");
+
+            if ($response->successful() && str_contains(strtolower($response->header('Content-Type', '')), 'image/') && strlen($response->body()) > 2000) {
+                return $response->body();
+            }
+        } catch (\Throwable $e) {
+            $this->command?->warn("Could not fetch photo for {$seed}: ".$e->getMessage());
+        }
+
+        return null;
+    }
+
+    private function storeSvgPlaceholder(string $slug, string $label): string
+    {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"><rect fill="#F7F5F2" width="1200" height="1200"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#1F6B4A" font-size="48" font-family="sans-serif">'.htmlspecialchars($label).'</text></svg>';
+        $path = "products/{$slug}.svg";
+        Storage::disk('public')->put($path, $svg);
+
+        return $path;
+    }
+
+    private function isBlankStoredImage(?string $path): bool
+    {
+        return $path === null || $path === '' || str_ends_with(strtolower($path), '.svg');
     }
 }

@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { placeholderImage, productImageSrc } from '@/lib/product-image';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -9,18 +10,17 @@ export function ProductGallery({ images, productName }: { images: GalleryImage[]
     const [index, setIndex] = useState(0);
     const [open, setOpen] = useState(false);
     const touchStart = useRef<number | null>(null);
-    const current = images[index];
-
-    if (!current) {
-        return (
-            <div className="flex aspect-square items-center justify-center rounded-[var(--shop-radius-image)] bg-[var(--shop-surface)] text-[var(--shop-text-muted)]">
-                No image
-            </div>
-        );
-    }
+    const gallery =
+        images.length > 0
+            ? images.map((img, i) => ({
+                  ...img,
+                  url: productImageSrc(img.url, `${productName}-${i}`, 1200),
+              }))
+            : [{ url: placeholderImage(productName, 1200, 1200), alt: productName }];
+    const current = gallery[index];
 
     const go = (next: number) => {
-        const last = images.length - 1;
+        const last = gallery.length - 1;
         setIndex(next < 0 ? last : next > last ? 0 : next);
     };
 
@@ -35,7 +35,7 @@ export function ProductGallery({ images, productName }: { images: GalleryImage[]
                     const start = touchStart.current;
                     const end = e.changedTouches[0]?.clientX;
                     touchStart.current = null;
-                    if (start == null || end == null || images.length < 2) {
+                    if (start == null || end == null || gallery.length < 2) {
                         return;
                     }
                     const delta = start - end;
@@ -47,7 +47,7 @@ export function ProductGallery({ images, productName }: { images: GalleryImage[]
                 <button type="button" onClick={() => setOpen(true)} className="block aspect-square w-full" aria-label="View larger image">
                     <img src={current.url} alt={current.alt || productName} className="h-full w-full object-cover" />
                 </button>
-                {images.length > 1 && (
+                {gallery.length > 1 && (
                     <>
                         <button
                             type="button"
@@ -68,9 +68,9 @@ export function ProductGallery({ images, productName }: { images: GalleryImage[]
                     </>
                 )}
             </div>
-            {images.length > 1 && (
+            {gallery.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto px-0">
-                    {images.map((img, i) => (
+                    {gallery.map((img, i) => (
                         <button
                             key={`${img.url}-${i}`}
                             type="button"

@@ -5,6 +5,7 @@ import { ShopButton } from '@/components/store/shop-button';
 import { ShopContainer } from '@/components/store/shop-container';
 import { ShopSectionHeader } from '@/components/store/shop-section-header';
 import { EmptyState } from '@/components/empty-state';
+import { placeholderImage, productImageSrc } from '@/lib/product-image';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight } from 'lucide-react';
 
@@ -24,7 +25,7 @@ export default function Home({
     hero?: ProductCardData | null;
 }) {
     const hasProducts = featured.length + newArrivals.length + onSale.length > 0;
-    const heroProduct = hero ?? featured.find((p) => p.image) ?? newArrivals.find((p) => p.image);
+    const heroProduct = hero ?? featured[0] ?? newArrivals[0];
 
     return (
         <StoreLayout title="Home" flush>
@@ -54,19 +55,25 @@ export default function Home({
                             )}
                         </div>
                     </div>
-                    {heroProduct?.image ? (
+                    {heroProduct ? (
                         <Link
                             href={`/products/${heroProduct.slug}`}
                             className="relative block aspect-[4/5] overflow-hidden rounded-[var(--shop-radius-modal)] bg-[var(--shop-bg)] md:aspect-[5/6]"
                         >
-                            <img src={heroProduct.image} alt={[heroProduct.brand, heroProduct.name].filter(Boolean).join(' ')} className="h-full w-full object-cover" />
+                            <img
+                                src={productImageSrc(heroProduct.image, heroProduct.slug, 1200)}
+                                alt={[heroProduct.brand, heroProduct.name].filter(Boolean).join(' ')}
+                                className="h-full w-full object-cover"
+                            />
                             <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/40 to-transparent p-5 text-white">
                                 <span className="shop-caption uppercase tracking-[0.14em] opacity-80">{heroProduct.brand || 'Featured'}</span>
                                 <span className="mt-1 block font-[family-name:var(--shop-display-font)] text-xl">{heroProduct.name}</span>
                             </span>
                         </Link>
                     ) : (
-                        <div className="hidden aspect-[5/6] rounded-[var(--shop-radius-modal)] bg-[var(--shop-bg)] md:block" />
+                        <div className="relative hidden aspect-[5/6] overflow-hidden rounded-[var(--shop-radius-modal)] bg-[var(--shop-bg)] md:block">
+                            <img src={placeholderImage('home-hero', 1200, 1440)} alt="" className="h-full w-full object-cover" />
+                        </div>
                     )}
                 </ShopContainer>
             </section>
@@ -107,13 +114,11 @@ export default function Home({
                                     href={`/shop?category=${c.slug}`}
                                     className="group relative aspect-[4/5] overflow-hidden rounded-[var(--shop-radius-card)] bg-[var(--shop-surface)]"
                                 >
-                                    {c.image && (
-                                        <img
-                                            src={c.image}
-                                            alt=""
-                                            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-[var(--shop-ease)] group-hover:scale-[1.03]"
-                                        />
-                                    )}
+                                    <img
+                                        src={productImageSrc(c.image, c.slug, 800)}
+                                        alt=""
+                                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-[var(--shop-ease)] group-hover:scale-[1.03]"
+                                    />
                                     <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
                                     <span className="relative mt-auto flex h-full items-end p-4 font-[family-name:var(--shop-display-font)] text-lg text-white md:p-5 md:text-xl">
                                         {c.name}

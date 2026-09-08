@@ -2,6 +2,7 @@ import { QuantityStepper } from '@/components/store/quantity-stepper';
 import { ShopButton } from '@/components/store/shop-button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { formatMoney } from '@/lib/money';
+import { productImageSrc } from '@/lib/product-image';
 import type { CartPayload } from '@/types/cart';
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
@@ -75,17 +76,13 @@ export function CartDrawer({
                             <ul className="divide-y divide-[var(--shop-border)]">
                                 {items.map((item) => (
                                     <li key={item.id} className="flex gap-3 py-4">
-                                        {item.image ? (
-                                            <Link
-                                                href={`/products/${item.slug}`}
-                                                onClick={() => onOpenChange(false)}
-                                                className="h-20 w-20 shrink-0 overflow-hidden rounded-[var(--shop-radius-image)] bg-[var(--shop-bg)]"
-                                            >
-                                                <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                                            </Link>
-                                        ) : (
-                                            <div className="h-20 w-20 shrink-0 rounded-[var(--shop-radius-image)] bg-[var(--shop-bg)]" />
-                                        )}
+                                        <Link
+                                            href={`/products/${item.slug}`}
+                                            onClick={() => onOpenChange(false)}
+                                            className="h-20 w-20 shrink-0 overflow-hidden rounded-[var(--shop-radius-image)] bg-[var(--shop-bg)]"
+                                        >
+                                            <img src={productImageSrc(item.image, item.slug)} alt={item.name} className="h-full w-full object-cover" />
+                                        </Link>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="min-w-0">
