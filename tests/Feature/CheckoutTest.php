@@ -184,4 +184,54 @@ class CheckoutTest extends TestCase
             ->where('cart.totals.delivery_fee', 80)
         );
     }
+
+    public function test_international_country_quote_and_cod_are_blocked(): void
+    {
+        $this->allowMakati();
+        $this->allowCountry('US', 950);
+        $product = $this->createProduct(['price' => 1000]);
+        $this->post('/cart', ['product_id' => $product->id, 'quantity' => 1]);
+
+        $this->get('/checkout?country_code=US&city=New+York&province=NY')->assertInertia(fn (Assert $page) => $page
+            ->component('store/checkout')
+            ->where('cart.totals.delivery_fee', 950)
+        );
+
+        $this->from('/checkout')->post('/checkout', $this->checkoutPayload([
+            'country_code' => 'US',
+            'city' => 'New York',
+            'province' => 'NY',
+            'postal_code' => '10001',
+            'payment_method' => 'cod',
+        ]))->assertSessionHasErrors('checkout');
+    }
+
+    public function test_free_shipping_threshold_does_not_zero_international_fee(): void
+    {
+        $this->allowCountry('SG', 450);
+        $this->putSetting('free_delivery_enabled', true);
+        $this->putSetting('free_delivery_threshold', 500);
+        $product = $this->createProduct(['price' => 1000]);
+        $this->post('/cart', ['product_id' => $product->id, 'quantity' => 1]);
+
+        $this->get('/checkout?country_code=SG&city=Singapore')->assertInertia(fn (Assert $page) => $page
+            ->component('store/checkout')
+            ->where('cart.totals.delivery_fee', 450)
+        );
+    }
+
+    public function test_unlisted_country_is_blocked(): void
+    {
+        $this->allowMakati();
+        $product = $this->createProduct();
+        $this->post('/cart', ['product_id' => $product->id, 'quantity' => 1]);
+
+        $this->from('/checkout')->post('/checkout', $this->checkoutPayload([
+            'country_code' => 'FR',
+            'city' => 'Paris',
+            'province' => 'Île-de-France',
+            'postal_code' => '75001',
+            'payment_method' => 'paymongo',
+        ]))->assertSessionHasErrors('checkout');
+    }
 }

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Store;
 use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\Order;
+use App\Support\Countries;
+use App\Support\ShippingAddress;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -29,7 +31,7 @@ class AccountController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|min:2|max:100',
-            'phone' => ['required', 'regex:/^(09\d{9}|\+639\d{9})$/'],
+            'phone' => ['required', 'regex:'.ShippingAddress::PHONE],
             'current_password' => 'nullable|current_password',
             'password' => 'nullable|confirmed|min:8',
         ]);
@@ -49,18 +51,15 @@ class AccountController extends Controller
 
     public function storeAddress(Request $request)
     {
-        $data = $request->validate([
+        $request->merge([
+            'country_code' => Countries::normalize($request->input('country_code')),
+        ]);
+        $data = $request->validate(array_merge(ShippingAddress::rules($request->input('country_code')), [
             'label' => 'nullable|string|max:50',
             'recipient_name' => 'required|string|max:100',
-            'phone' => ['required', 'regex:/^(09\d{9}|\+639\d{9})$/'],
-            'line1' => 'required|string|max:200',
-            'line2' => 'nullable|string|max:200',
-            'barangay' => 'nullable|string|max:100',
-            'city' => 'required|string|max:100',
-            'province' => 'required|string|max:100',
-            'postal_code' => 'required|digits:4',
+            'phone' => ['required', 'regex:'.ShippingAddress::PHONE],
             'is_default' => 'boolean',
-        ]);
+        ]));
         $data['user_id'] = $request->user()->id;
         if ($request->boolean('is_default')) {
             $request->user()->addresses()->update(['is_default' => false]);

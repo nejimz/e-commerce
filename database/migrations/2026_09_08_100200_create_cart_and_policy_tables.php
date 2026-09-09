@@ -10,16 +10,18 @@ return new class extends Migration
     {
         Schema::create('delivery_areas', function (Blueprint $table) {
             $table->id();
-            $table->string('province');
-            $table->string('city');
+            $table->char('country_code', 2)->default('PH');
+            $table->string('province')->nullable();
+            $table->string('city')->nullable();
             $table->string('barangay')->nullable();
-            $table->string('postal_code', 8)->nullable();
+            $table->string('postal_code', 16)->nullable();
             $table->string('mode', 10)->default('allow');
             $table->decimal('delivery_fee', 12, 2)->default(0);
+            $table->boolean('free_shipping_eligible')->default(true);
             $table->boolean('same_day_eligible')->default(false);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            $table->index(['province', 'city']);
+            $table->index(['country_code', 'province', 'city']);
         });
 
         Schema::create('addresses', function (Blueprint $table) {
@@ -30,10 +32,11 @@ return new class extends Migration
             $table->string('phone', 20);
             $table->string('line1');
             $table->string('line2')->nullable();
+            $table->char('country_code', 2)->default('PH');
             $table->string('barangay')->nullable();
             $table->string('city');
-            $table->string('province');
-            $table->string('postal_code', 8);
+            $table->string('province')->nullable();
+            $table->string('postal_code', 16);
             $table->boolean('is_default')->default(false);
             $table->timestamps();
             $table->softDeletes();

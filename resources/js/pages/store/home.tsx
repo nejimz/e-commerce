@@ -38,9 +38,9 @@ export default function Home({
                 <ShopContainer className="grid items-center gap-10 py-10 md:grid-cols-2 md:gap-16 md:py-16">
                     <div className="max-w-xl">
                         <p className="shop-caption uppercase tracking-[0.18em] text-[var(--shop-text-muted)]">New season</p>
-                        <h1 className="shop-display mt-4">Everyday pieces, delivered in Metro Manila.</h1>
+                        <h1 className="shop-display mt-4">Everyday pieces, shipped worldwide.</h1>
                         <p className="shop-body-lg mt-5 text-[var(--shop-text-muted)]">
-                            Quiet design, considered materials, and a checkout that stays honest — cash on delivery or PayMongo.
+                            Quiet design, considered materials, and a checkout that stays honest — cash on delivery in the Philippines, or PayMongo.
                         </p>
                         <div className="mt-8 flex flex-wrap items-center gap-3">
                             <ShopButton asChild>
@@ -82,8 +82,8 @@ export default function Home({
             <ShopContainer>
                 <ul className="grid gap-8 py-10 text-sm md:grid-cols-3 md:divide-x md:divide-[var(--shop-border)] md:py-14">
                     <li className="md:pr-8">
-                        <p className="font-medium text-[var(--shop-text)]">Metro Manila delivery</p>
-                        <p className="mt-1.5 leading-relaxed text-[var(--shop-text-muted)]">We ship to serviceable cities only. Check your area at checkout.</p>
+                        <p className="font-medium text-[var(--shop-text)]">Philippines and international shipping</p>
+                        <p className="mt-1.5 leading-relaxed text-[var(--shop-text-muted)]">We ship to serviceable cities and countries. Fees are confirmed at checkout.</p>
                     </li>
                     <li className="md:px-8">
                         <p className="font-medium text-[var(--shop-text)]">Tracked to your door</p>

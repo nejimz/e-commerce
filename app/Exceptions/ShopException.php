@@ -18,7 +18,7 @@ class ShopException extends RuntimeException
 
     public static function undeliverable(string $area): self
     {
-        return new self("We do not deliver to {$area}. Please choose another address or contact us.");
+        return new self("We do not ship to {$area}. Please choose another address or contact us.");
     }
 
     public static function insufficientStock(string $name, int $available): self

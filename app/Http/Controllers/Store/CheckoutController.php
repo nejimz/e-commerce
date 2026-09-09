@@ -11,6 +11,8 @@ use App\Models\Setting;
 use App\Services\CartService;
 use App\Services\OrderService;
 use App\Services\PaymentService;
+use App\Support\Countries;
+use App\Support\ShippingAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -28,7 +30,8 @@ class CheckoutController extends Controller
         $province = $request->string('province')->toString() ?: null;
         $city = $request->string('city')->toString() ?: null;
         $postal = $request->string('postal_code')->toString() ?: null;
-        $payload = $this->carts->payload($request, $province, $city, $postal);
+        $country = $request->string('country_code')->toString() ?: null;
+        $payload = $this->carts->payload($request, $province, $city, $postal, $country);
         if (($payload['cart']['totals']['item_count'] ?? 0) < 1) {
             return redirect()->route('cart.show')->with('error', 'Your cart is empty.');
         }
@@ -44,16 +47,14 @@ class CheckoutController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $request->merge([
+            'country_code' => Countries::normalize($request->input('country_code')),
+        ]);
+
+        $data = $request->validate(array_merge(ShippingAddress::rules($request->input('country_code')), [
             'name' => 'required|string|min:2|max:100',
             'email' => 'required|email|max:150',
-            'phone' => ['required', 'regex:/^(09\d{9}|\+639\d{9})$/'],
-            'line1' => 'required|string|max:200',
-            'line2' => 'nullable|string|max:200',
-            'barangay' => 'nullable|string|max:100',
-            'city' => 'required|string|max:100',
-            'province' => 'required|string|max:100',
-            'postal_code' => 'required|digits:4',
+            'phone' => ['required', 'regex:'.ShippingAddress::PHONE],
             'notes' => 'nullable|string|max:500',
             'gift_message' => 'nullable|string|max:200',
             'hide_prices' => 'boolean',
@@ -61,7 +62,7 @@ class CheckoutController extends Controller
             'terms' => 'accepted',
             'idempotency_key' => 'required|string|max:64',
             'save_address' => 'boolean',
-        ]);
+        ]));
 
         try {
             $order = $this->orders->place($data, $request);
@@ -78,9 +79,10 @@ class CheckoutController extends Controller
                 'phone' => $data['phone'],
                 'line1' => $data['line1'],
                 'line2' => $data['line2'] ?? null,
+                'country_code' => $data['country_code'],
                 'barangay' => $data['barangay'] ?? null,
                 'city' => $data['city'],
-                'province' => $data['province'],
+                'province' => $data['province'] ?? null,
                 'postal_code' => $data['postal_code'],
                 'is_default' => $request->user()->addresses()->count() === 0,
             ]);

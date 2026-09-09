@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Support\Countries;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,7 +17,7 @@ class Order extends Model
         'subtotal', 'discount_amount', 'coupon_code', 'delivery_fee', 'packing_fee', 'vat_amount', 'total',
         'payment_method', 'payment_status', 'order_status',
         'shipping_recipient', 'shipping_phone', 'shipping_line1', 'shipping_line2',
-        'shipping_barangay', 'shipping_city', 'shipping_province', 'shipping_postal_code',
+        'shipping_country_code', 'shipping_barangay', 'shipping_city', 'shipping_province', 'shipping_postal_code',
         'delivery_area_id', 'customer_note', 'admin_note', 'gift_message', 'hide_prices',
         'terms_accepted_at', 'idempotency_key', 'placed_at',
     ];
@@ -73,6 +74,7 @@ class Order extends Model
             $this->shipping_city,
             $this->shipping_province,
             $this->shipping_postal_code,
+            Countries::name($this->shipping_country_code),
         ])->filter()->implode(', ');
     }
 }

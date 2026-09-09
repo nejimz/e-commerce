@@ -53,7 +53,7 @@ class DiscountService
         return $coupon;
     }
 
-    public function discountAmount(Coupon $coupon, float $subtotal, float $deliveryFee): array
+    public function discountAmount(Coupon $coupon, float $subtotal, float $deliveryFee, bool $allowFreeShipping = true): array
     {
         $discount = 0.0;
         $delivery = $deliveryFee;
@@ -62,7 +62,7 @@ class DiscountService
             $discount = round($subtotal * ((float) $coupon->value) / 100, 2);
         } elseif ($coupon->type === CouponType::Fixed) {
             $discount = min($subtotal, (float) $coupon->value);
-        } elseif ($coupon->type === CouponType::FreeDelivery) {
+        } elseif ($coupon->type === CouponType::FreeDelivery && $allowFreeShipping) {
             $delivery = 0.0;
         }
 

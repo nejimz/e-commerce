@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Countries;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,7 +13,7 @@ class Address extends Model
 
     protected $fillable = [
         'user_id', 'label', 'recipient_name', 'phone', 'line1', 'line2',
-        'barangay', 'city', 'province', 'postal_code', 'is_default',
+        'country_code', 'barangay', 'city', 'province', 'postal_code', 'is_default',
     ];
 
     protected function casts(): array
@@ -27,7 +28,14 @@ class Address extends Model
 
     public function summary(): string
     {
-        return collect([$this->line1, $this->barangay, $this->city, $this->province, $this->postal_code])
+        return collect([
+            $this->line1,
+            $this->barangay,
+            $this->city,
+            $this->province,
+            $this->postal_code,
+            Countries::name($this->country_code),
+        ])
             ->filter()
             ->implode(', ');
     }

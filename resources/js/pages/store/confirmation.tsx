@@ -25,6 +25,7 @@ type Order = {
     shipping_recipient?: string | null;
     shipping_line1?: string | null;
     shipping_line2?: string | null;
+    shipping_country_code?: string | null;
     shipping_barangay?: string | null;
     shipping_city?: string | null;
     shipping_province?: string | null;
@@ -57,6 +58,7 @@ export default function Confirmation({ order }: { order: Order }) {
         order.shipping_city,
         order.shipping_province,
         order.shipping_postal_code,
+        order.shipping_country_code,
     ]
         .filter(Boolean)
         .join(', ');
@@ -80,7 +82,7 @@ export default function Confirmation({ order }: { order: Order }) {
                         </div>
                         {address && (
                             <div>
-                                <p className="shop-caption uppercase tracking-[0.14em] text-[var(--shop-text-muted)]">Delivery</p>
+                                <p className="shop-caption uppercase tracking-[0.14em] text-[var(--shop-text-muted)]">Shipping</p>
                                 <p className="mt-1.5 text-sm leading-relaxed">{address}</p>
                             </div>
                         )}
@@ -104,7 +106,7 @@ export default function Confirmation({ order }: { order: Order }) {
                         <div className="mt-4 space-y-1.5 text-sm">
                             <Row label="Subtotal" value={Number(order.subtotal)} />
                             {Number(order.discount_amount) > 0 && <Row label="Discount" value={-Number(order.discount_amount)} />}
-                            <Row label="Delivery" value={Number(order.delivery_fee || 0)} />
+                            <Row label="Shipping" value={Number(order.delivery_fee || 0)} />
                             {Number(order.packing_fee) > 0 && <Row label="Packing" value={Number(order.packing_fee)} />}
                             {Number(order.vat_amount) > 0 && (
                                 <p className="text-xs text-[var(--shop-text-muted)]">Includes VAT of {formatMoney(Number(order.vat_amount))}</p>

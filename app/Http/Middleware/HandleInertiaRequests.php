@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Services\CartService;
+use App\Support\Countries;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -66,6 +67,7 @@ class HandleInertiaRequests extends Middleware
             'cartCount' => $cart['totals']['item_count'] ?? 0,
             'navCategories' => $navCategories,
             'store' => $store,
+            'countries' => Countries::options(),
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

@@ -86,8 +86,8 @@ export default function CartPage({ cart }: { cart: CartPayload }) {
                             <div>
                                 <p className="text-sm text-[var(--shop-text-muted)]">
                                     {remaining > 0
-                                        ? `${formatMoney(remaining)} away from free delivery`
-                                        : 'You have free delivery on this order.'}
+                                        ? `${formatMoney(remaining)} away from free shipping`
+                                        : 'You have free shipping on this order.'}
                                 </p>
                                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--shop-bg)]">
                                     <div className="h-full rounded-full bg-[var(--shop-accent)]" style={{ width: `${progress}%` }} />
@@ -96,7 +96,7 @@ export default function CartPage({ cart }: { cart: CartPayload }) {
                         )}
                         <Row label="Subtotal" value={cart.totals.subtotal} />
                         {cart.totals.discount > 0 && <Row label="Discount" value={-cart.totals.discount} />}
-                        <Row label="Delivery" value={cart.totals.delivery_fee} />
+                        <Row label="Shipping" value={cart.totals.delivery_fee} />
                         {cart.totals.packing_fee > 0 && <Row label="Packing" value={cart.totals.packing_fee} />}
                         <div className="border-t border-[var(--shop-border)] pt-3">
                             <Row label="Total" value={cart.totals.total} bold />
@@ -131,7 +131,7 @@ export default function CartPage({ cart }: { cart: CartPayload }) {
                             <Link href="/checkout">Checkout</Link>
                         </ShopButton>
                         <p className="text-sm leading-relaxed text-[var(--shop-text-muted)]">
-                            We deliver to serviceable Metro Manila addresses — confirmed at checkout.
+                            We ship to the Philippines and selected countries — confirmed at checkout.
                         </p>
                     </aside>
                 </div>

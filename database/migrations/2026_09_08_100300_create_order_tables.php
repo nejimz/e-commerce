@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('guest_email')->nullable();
             $table->string('customer_name');
             $table->string('customer_email');
-            $table->string('customer_phone', 20);
+            $table->string('customer_phone', 30);
             $table->decimal('subtotal', 12, 2);
             $table->decimal('discount_amount', 12, 2)->default(0);
             $table->string('coupon_code')->nullable();
@@ -27,13 +27,14 @@ return new class extends Migration
             $table->string('payment_status', 20)->default('unpaid');
             $table->string('order_status', 30)->default('pending');
             $table->string('shipping_recipient');
-            $table->string('shipping_phone', 20);
+            $table->string('shipping_phone', 30);
             $table->string('shipping_line1');
             $table->string('shipping_line2')->nullable();
+            $table->char('shipping_country_code', 2)->default('PH');
             $table->string('shipping_barangay')->nullable();
             $table->string('shipping_city');
-            $table->string('shipping_province');
-            $table->string('shipping_postal_code', 8);
+            $table->string('shipping_province')->nullable();
+            $table->string('shipping_postal_code', 16);
             $table->foreignId('delivery_area_id')->nullable()->constrained()->nullOnDelete();
             $table->text('customer_note')->nullable();
             $table->text('admin_note')->nullable();

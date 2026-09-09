@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\ShopException;
 use App\Models\DeliveryArea;
 use App\Models\Setting;
+use App\Support\Countries;
 use Carbon\Carbon;
 
 class StorePolicyService
@@ -43,37 +44,58 @@ class StorePolicyService
         }
     }
 
-    public function resolveArea(string $province, string $city, ?string $postalCode = null): ?DeliveryArea
+    public function resolveArea(string $province, string $city, ?string $postalCode = null, ?string $countryCode = null): ?DeliveryArea
     {
-        $query = DeliveryArea::query()->where('is_active', true);
+        $country = Countries::normalize($countryCode);
+        $query = DeliveryArea::query()->where('is_active', true)->where('country_code', $country);
 
-        $match = (clone $query)
-            ->whereRaw('LOWER(province) = ?', [mb_strtolower($province)])
-            ->whereRaw('LOWER(city) = ?', [mb_strtolower($city)])
-            ->first();
+        if ($city !== '') {
+            $match = (clone $query)
+                ->whereNotNull('city')
+                ->whereRaw('LOWER(city) = ?', [mb_strtolower($city)])
+                ->when($province !== '', function ($q) use ($province) {
+                    $q->where(function ($inner) use ($province) {
+                        $inner->whereNull('province')
+                            ->orWhereRaw('LOWER(province) = ?', [mb_strtolower($province)]);
+                    });
+                })
+                ->orderByRaw('CASE WHEN province IS NULL THEN 1 ELSE 0 END')
+                ->first();
 
-        if (! $match && $postalCode) {
-            $match = (clone $query)->where('postal_code', $postalCode)->first();
+            if ($match) {
+                return $match;
+            }
         }
 
-        return $match;
+        if ($postalCode) {
+            $match = (clone $query)->where('postal_code', $postalCode)->first();
+            if ($match) {
+                return $match;
+            }
+        }
+
+        return (clone $query)->whereNull('city')->whereNull('province')->first();
     }
 
-    public function assertDeliverable(string $province, string $city, ?string $postalCode = null): DeliveryArea
+    public function assertDeliverable(string $province, string $city, ?string $postalCode = null, ?string $countryCode = null): DeliveryArea
     {
-        $area = $this->resolveArea($province, $city, $postalCode);
+        $country = Countries::normalize($countryCode);
+        $area = $this->resolveArea($province, $city, $postalCode, $country);
         $defaultBlock = Setting::get('unlisted_area_default', 'block') === 'block';
+        $place = $area?->displayName() ?: collect([$city, $province, Countries::name($country)])->filter()->implode(', ');
 
         if (! $area) {
             if ($defaultBlock) {
-                throw ShopException::undeliverable("{$city}, {$province}");
+                throw ShopException::undeliverable($place);
             }
 
             $fallback = new DeliveryArea([
-                'province' => $province,
-                'city' => $city,
+                'country_code' => $country,
+                'province' => $province !== '' ? $province : null,
+                'city' => $city !== '' ? $city : null,
                 'mode' => 'allow',
                 'delivery_fee' => Setting::get('default_delivery_fee', 99),
+                'free_shipping_eligible' => Countries::isDomestic($country),
             ]);
             $fallback->id = null;
 
@@ -81,7 +103,7 @@ class StorePolicyService
         }
 
         if (! $area->allows()) {
-            throw ShopException::undeliverable("{$area->city}, {$area->province}");
+            throw ShopException::undeliverable($place);
         }
 
         return $area;

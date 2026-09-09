@@ -14,6 +14,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\Countries;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -42,9 +43,12 @@ class OrderService
             throw ShopException::storePaused('Your cart is empty.');
         }
 
-        $area = $this->policy->assertDeliverable($data['province'], $data['city'], $data['postal_code'] ?? null);
+        $country = Countries::normalize($data['country_code'] ?? null);
+        $province = (string) ($data['province'] ?? '');
+        $city = (string) ($data['city'] ?? '');
+        $area = $this->policy->assertDeliverable($province, $city, $data['postal_code'] ?? null, $country);
 
-        return DB::transaction(function () use ($data, $request, $cart, $area) {
+        return DB::transaction(function () use ($data, $request, $cart, $area, $country, $province, $city) {
             if (! empty($data['idempotency_key'])) {
                 $existing = Order::query()->where('idempotency_key', $data['idempotency_key'])->first();
                 if ($existing) {
@@ -67,22 +71,31 @@ class OrderService
 
             $totals = $this->carts->totals(
                 $cart->fresh(['items.product', 'items.variant', 'coupon']),
-                $data['province'],
-                $data['city'],
+                $province,
+                $city,
                 $data['postal_code'] ?? null,
                 $request->user()?->id,
                 $data['email'],
+                $country,
             );
 
             $codMax = (float) Setting::get('cod_maximum', 0);
             $method = PaymentMethod::from($data['payment_method']);
+            $domestic = Countries::isDomestic($country);
+            if ($method === PaymentMethod::Cod && ! $domestic) {
+                throw ShopException::storePaused('Cash on Delivery is only available for Philippines addresses. Please pay online.');
+            }
             if ($method === PaymentMethod::Cod && $codMax > 0 && $totals['total'] > $codMax) {
                 throw ShopException::storePaused('Cash on Delivery is not available above PHP '.number_format($codMax, 2).'.');
             }
 
             $gatewayEnabled = config('shop.gateway') === 'paymongo';
             if ($method === PaymentMethod::Paymongo && ! $gatewayEnabled) {
-                throw ShopException::storePaused('Online payment is not available right now. Please choose Cash on Delivery.');
+                throw ShopException::storePaused(
+                    $domestic
+                        ? 'Online payment is not available right now. Please choose Cash on Delivery.'
+                        : 'Online payment is required for international orders, but it is not available right now.'
+                );
             }
 
             $order = Order::query()->create([
@@ -106,9 +119,10 @@ class OrderService
                 'shipping_phone' => $data['phone'],
                 'shipping_line1' => $data['line1'],
                 'shipping_line2' => $data['line2'] ?? null,
+                'shipping_country_code' => $country,
                 'shipping_barangay' => $data['barangay'] ?? null,
-                'shipping_city' => $data['city'],
-                'shipping_province' => $data['province'],
+                'shipping_city' => $city,
+                'shipping_province' => $province !== '' ? $province : null,
                 'shipping_postal_code' => $data['postal_code'],
                 'delivery_area_id' => $area->id,
                 'customer_note' => $data['notes'] ?? null,

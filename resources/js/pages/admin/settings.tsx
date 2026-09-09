@@ -116,20 +116,20 @@ export default function SettingsPage({ settings }: { settings: Record<string, an
                     </div>
                 </AdminPanel>
 
-                <AdminPanel title="Delivery & fees">
+                <AdminPanel title="Shipping & fees">
                     <div className="grid gap-4">
-                        <AdminField label="Unlisted areas" htmlFor="unlisted_area_default" error={form.errors.unlisted_area_default}>
+                        <AdminField label="Unlisted destinations" htmlFor="unlisted_area_default" error={form.errors.unlisted_area_default}>
                             <AdminSelect
                                 id="unlisted_area_default"
                                 value={form.data.unlisted_area_default}
                                 onChange={(e) => form.setData('unlisted_area_default', e.target.value)}
                             >
-                                <option value="block">Block unlisted areas</option>
-                                <option value="allow">Allow unlisted areas</option>
+                                <option value="block">Block unlisted destinations</option>
+                                <option value="allow">Allow unlisted destinations</option>
                             </AdminSelect>
                         </AdminField>
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <AdminField label="Default delivery fee" htmlFor="default_delivery_fee" error={form.errors.default_delivery_fee}>
+                            <AdminField label="Default shipping fee" htmlFor="default_delivery_fee" error={form.errors.default_delivery_fee}>
                                 <AdminInput
                                     id="default_delivery_fee"
                                     type="number"
@@ -168,11 +168,11 @@ export default function SettingsPage({ settings }: { settings: Record<string, an
                             </AdminField>
                         </div>
                         <AdminCheckbox
-                            label="Free delivery enabled"
+                            label="Free shipping enabled"
                             checked={form.data.free_delivery_enabled}
                             onChange={(e) => form.setData('free_delivery_enabled', e.target.checked)}
                         />
-                        <AdminField label="Free delivery threshold" htmlFor="free_delivery_threshold" error={form.errors.free_delivery_threshold}>
+                        <AdminField label="Free shipping threshold" htmlFor="free_delivery_threshold" hint="Applies only to zones marked free-shipping eligible." error={form.errors.free_delivery_threshold}>
                             <AdminInput
                                 id="free_delivery_threshold"
                                 type="number"

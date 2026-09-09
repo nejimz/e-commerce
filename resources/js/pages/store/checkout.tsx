@@ -1,4 +1,5 @@
 import CheckoutLayout from '@/layouts/checkout-layout';
+import { CountrySelect } from '@/components/store/country-select';
 import { ShopButton } from '@/components/store/shop-button';
 import { ShopCheckbox, ShopInput, ShopLabel, ShopRadio, ShopTextarea } from '@/components/store/shop-input';
 import { formatMoney } from '@/lib/money';
@@ -13,13 +14,14 @@ type Address = {
     phone?: string;
     line1: string;
     line2?: string | null;
+    country_code?: string | null;
     barangay?: string | null;
     city: string;
     province: string;
     postal_code: string;
 };
 
-const STEPS = ['Contact', 'Delivery', 'Payment', 'Review'] as const;
+const STEPS = ['Contact', 'Shipping', 'Payment', 'Review'] as const;
 
 export default function Checkout({
     cart,
@@ -46,6 +48,7 @@ export default function Checkout({
         phone: auth.user?.phone || '',
         line1: '',
         line2: '',
+        country_code: 'PH',
         barangay: '',
         city: '',
         province: 'Metro Manila',
@@ -60,7 +63,8 @@ export default function Checkout({
     });
 
     const total = cart.totals.total;
-    const hideCod = Number(cod_maximum) > 0 && total > Number(cod_maximum);
+    const isPh = form.data.country_code === 'PH';
+    const hideCod = !isPh || (Number(cod_maximum) > 0 && total > Number(cod_maximum));
     const paymongoOn = gateway === 'paymongo';
 
     const contactOk = () => {
@@ -71,8 +75,8 @@ export default function Checkout({
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.data.email)) {
             errors.email = 'Enter a valid email.';
         }
-        if (!/^(09\d{9}|\+639\d{9})$/.test(form.data.phone)) {
-            errors.phone = 'Use 09XXXXXXXXX or +639XXXXXXXXX.';
+        if (!/^(09\d{9}|\+639\d{9}|\+[1-9]\d{7,14})$/.test(form.data.phone.replace(/\s/g, ''))) {
+            errors.phone = 'Use 09XXXXXXXXX, +639XXXXXXXXX, or an international number starting with +.';
         }
 
         return errors;
@@ -86,19 +90,29 @@ export default function Checkout({
         if (!form.data.city.trim()) {
             errors.city = 'Enter your city.';
         }
-        if (!form.data.province.trim()) {
+        if (isPh && !form.data.province.trim()) {
             errors.province = 'Enter your province.';
         }
-        if (!/^\d{4}$/.test(form.data.postal_code)) {
+        if (isPh && !/^\d{4}$/.test(form.data.postal_code)) {
             errors.postal_code = 'Postal code must be 4 digits.';
+        }
+        if (!isPh && !/^[A-Za-z0-9][A-Za-z0-9\s\-]{1,15}$/.test(form.data.postal_code.trim())) {
+            errors.postal_code = 'Enter a postal or ZIP code.';
         }
 
         return errors;
     };
 
     const paymentOk = () => {
+        if (hideCod && form.data.payment_method === 'cod') {
+            return {
+                payment_method: isPh
+                    ? 'Cash on delivery is not available for this total.'
+                    : 'Cash on delivery is only available in the Philippines. Please pay online.',
+            };
+        }
         if (hideCod && !paymongoOn) {
-            return { payment_method: 'No payment method is available for this total.' };
+            return { payment_method: isPh ? 'No payment method is available for this total.' : 'Online payment is required for international orders.' };
         }
         if (!form.data.payment_method) {
             return { payment_method: 'Choose a payment method.' };
@@ -144,6 +158,7 @@ export default function Checkout({
     };
 
     const fillAddress = (a: Address) => {
+        const country = a.country_code || 'PH';
         setSelectedAddress(a.id);
         form.setData({
             ...form.data,
@@ -151,42 +166,54 @@ export default function Checkout({
             phone: a.phone || form.data.phone,
             line1: a.line1,
             line2: a.line2 || '',
+            country_code: country,
             barangay: a.barangay || '',
             city: a.city,
             province: a.province,
             postal_code: a.postal_code,
+            payment_method: country !== 'PH' && paymongoOn ? 'paymongo' : form.data.payment_method,
         });
-        refreshFees(a.province, a.city, a.postal_code);
-        checkArea(a.province, a.city, a.postal_code);
+        refreshFees(a.province, a.city, a.postal_code, country);
+        checkArea(a.province, a.city, a.postal_code, country);
     };
 
-    const refreshFees = (province = form.data.province, city = form.data.city, postal_code = form.data.postal_code) => {
-        if (!province.trim() || !city.trim()) {
+    const refreshFees = (
+        province = form.data.province,
+        city = form.data.city,
+        postal_code = form.data.postal_code,
+        country_code = form.data.country_code,
+    ) => {
+        if (!country_code) {
             return;
         }
         router.reload({
             only: ['cart'],
-            data: { province, city, postal_code },
+            data: { country_code, province, city, postal_code },
             preserveUrl: true,
         });
     };
 
-    const checkArea = (province = form.data.province, city = form.data.city, postal_code = form.data.postal_code) => {
-        if (!province.trim() || !city.trim()) {
+    const checkArea = (
+        province = form.data.province,
+        city = form.data.city,
+        postal_code = form.data.postal_code,
+        country_code = form.data.country_code,
+    ) => {
+        if (!city.trim()) {
             return;
         }
         router.post(
             '/deliverable',
-            { province, city, postal_code },
+            { country_code, province, city, postal_code },
             {
                 preserveScroll: true,
                 preserveState: true,
                 onSuccess: (page) => {
                     const flash = (page.props as { flash?: { success?: string } }).flash;
-                    setAreaMessage({ ok: true, text: flash?.success || 'We deliver to this area.' });
+                    setAreaMessage({ ok: true, text: flash?.success || 'We ship to this address.' });
                 },
                 onError: (errors) => {
-                    setAreaMessage({ ok: false, text: String(errors.area || 'We do not deliver to this area.') });
+                    setAreaMessage({ ok: false, text: String(errors.area || 'We do not ship to this address.') });
                 },
             },
         );
@@ -251,7 +278,7 @@ export default function Checkout({
                         </ShopButton>
                     </Accordion>
 
-                    <Accordion title="2. Delivery" open={step === 1} onOpen={() => goTo(1)}>
+                    <Accordion title="2. Shipping" open={step === 1} onOpen={() => goTo(1)}>
                         {addresses.length > 0 && (
                             <div className="mb-1 space-y-2">
                                 {addresses.map((a) => (
@@ -270,22 +297,44 @@ export default function Checkout({
                                 ))}
                             </div>
                         )}
+                        <Field label="Country" error={form.errors.country_code}>
+                            <CountrySelect
+                                value={form.data.country_code}
+                                onChange={(e) => {
+                                    const country_code = e.target.value;
+                                    const nextPay = country_code !== 'PH' && paymongoOn ? 'paymongo' : form.data.payment_method;
+                                    form.setData({
+                                        ...form.data,
+                                        country_code,
+                                        province: country_code === 'PH' ? form.data.province || 'Metro Manila' : '',
+                                        barangay: country_code === 'PH' ? form.data.barangay : '',
+                                        payment_method: nextPay === 'cod' && country_code !== 'PH' ? (paymongoOn ? 'paymongo' : '') : nextPay,
+                                    });
+                                    refreshFees(form.data.province, form.data.city, form.data.postal_code, country_code);
+                                    if (form.data.city.trim()) {
+                                        checkArea(form.data.province, form.data.city, form.data.postal_code, country_code);
+                                    }
+                                }}
+                            />
+                        </Field>
                         <Field label="Address" error={stepErrors.line1 || form.errors.line1}>
                             <ShopInput value={form.data.line1} onChange={(e) => form.setData('line1', e.target.value)} autoComplete="address-line1" />
                         </Field>
                         <Field label="Apartment, suite (optional)" error={form.errors.line2}>
                             <ShopInput value={form.data.line2} onChange={(e) => form.setData('line2', e.target.value)} autoComplete="address-line2" />
                         </Field>
-                        <Field label="Barangay (optional)" error={form.errors.barangay}>
-                            <ShopInput value={form.data.barangay} onChange={(e) => form.setData('barangay', e.target.value)} />
-                        </Field>
+                        {isPh && (
+                            <Field label="Barangay (optional)" error={form.errors.barangay}>
+                                <ShopInput value={form.data.barangay} onChange={(e) => form.setData('barangay', e.target.value)} />
+                            </Field>
+                        )}
                         <Field label="City" error={stepErrors.city || form.errors.city}>
                             <ShopInput value={form.data.city} onChange={(e) => form.setData('city', e.target.value)} onBlur={onAddressBlur} autoComplete="address-level2" />
                         </Field>
-                        <Field label="Province" error={stepErrors.province || form.errors.province}>
+                        <Field label={isPh ? 'Province' : 'State / region (optional)'} error={stepErrors.province || form.errors.province}>
                             <ShopInput value={form.data.province} onChange={(e) => form.setData('province', e.target.value)} onBlur={onAddressBlur} autoComplete="address-level1" />
                         </Field>
-                        <Field label="Postal code" error={stepErrors.postal_code || form.errors.postal_code}>
+                        <Field label={isPh ? 'Postal code' : 'Postal / ZIP code'} error={stepErrors.postal_code || form.errors.postal_code}>
                             <ShopInput value={form.data.postal_code} onChange={(e) => form.setData('postal_code', e.target.value)} onBlur={onAddressBlur} autoComplete="postal-code" />
                         </Field>
                         <Field label="Delivery notes (optional)" error={form.errors.notes}>
@@ -296,7 +345,7 @@ export default function Checkout({
                                 {areaMessage.text}
                             </p>
                         )}
-                        <p className="text-sm text-[var(--shop-text-muted)]">We confirm deliverability when you enter city and postal code.</p>
+                        <p className="text-sm text-[var(--shop-text-muted)]">Shipping fee is confirmed when you choose a country and city.</p>
                         {auth.user && (
                             <label className="flex min-h-11 items-center gap-2.5 text-sm">
                                 <ShopCheckbox checked={form.data.save_address} onChange={(e) => form.setData('save_address', e.target.checked)} />
@@ -320,9 +369,14 @@ export default function Checkout({
                                     Cash on delivery
                                 </label>
                             )}
-                            {hideCod && (
+                            {hideCod && isPh && (
                                 <p className="text-sm text-[var(--shop-text-muted)]">
                                     Cash on delivery is not available above {formatMoney(cod_maximum)}.
+                                </p>
+                            )}
+                            {hideCod && !isPh && (
+                                <p className="text-sm text-[var(--shop-text-muted)]">
+                                    Cash on delivery is only available for Philippines addresses.
                                 </p>
                             )}
                             {paymongoOn && (
@@ -417,7 +471,7 @@ function OrderSummary({ cart }: { cart: CartPayload }) {
                     </div>
                 )}
                 <div className="flex justify-between text-[var(--shop-text-muted)]">
-                    <span>Delivery</span>
+                    <span>Shipping</span>
                     <span className="tabular-nums">{formatMoney(cart.totals.delivery_fee)}</span>
                 </div>
                 {cart.totals.packing_fee > 0 && (

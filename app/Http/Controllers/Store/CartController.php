@@ -79,15 +79,21 @@ class CartController extends Controller
     public function deliverable(Request $request, StorePolicyService $policy)
     {
         $data = $request->validate([
-            'province' => 'required|string',
+            'country_code' => 'nullable|string|size:2',
+            'province' => 'nullable|string',
             'city' => 'required|string',
             'postal_code' => 'nullable|string',
         ]);
 
         try {
-            $area = $policy->assertDeliverable($data['province'], $data['city'], $data['postal_code'] ?? null);
+            $area = $policy->assertDeliverable(
+                $data['province'] ?? '',
+                $data['city'],
+                $data['postal_code'] ?? null,
+                $data['country_code'] ?? null,
+            );
 
-            return back()->with('success', 'We deliver to '.$area->city.'.');
+            return back()->with('success', 'We ship to '.$area->displayName().'.');
         } catch (ShopException $e) {
             return back()->withErrors(['area' => $e->getMessage()]);
         }

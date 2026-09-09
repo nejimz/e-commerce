@@ -43,7 +43,7 @@ const storeNav: NavItem[] = [
     { href: '/admin/categories', label: 'Categories', icon: FolderTree },
     { href: '/admin/brands', label: 'Brands', icon: Tag },
     { href: '/admin/coupons', label: 'Promos', icon: TicketPercent },
-    { href: '/admin/areas', label: 'Delivery', icon: MapPin },
+    { href: '/admin/areas', label: 'Shipping', icon: MapPin },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

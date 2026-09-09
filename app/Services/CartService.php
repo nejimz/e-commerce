@@ -193,7 +193,7 @@ class CartService
         return $this->current($request);
     }
 
-    public function totals(Cart $cart, ?string $province = null, ?string $city = null, ?string $postal = null, ?int $userId = null, ?string $email = null): array
+    public function totals(Cart $cart, ?string $province = null, ?string $city = null, ?string $postal = null, ?int $userId = null, ?string $email = null, ?string $country = null): array
     {
         $cart->loadMissing(['items.product', 'items.variant', 'coupon']);
         $subtotal = 0.0;
@@ -206,8 +206,8 @@ class CartService
         $subtotal = round($subtotal, 2);
 
         $area = null;
-        if ($province && $city) {
-            $area = $this->policy->resolveArea($province, $city, $postal);
+        if ($city || $country) {
+            $area = $this->policy->resolveArea((string) $province, (string) $city, $postal, $country);
         }
         $quote = $this->shipping->quote($area, $subtotal);
         $delivery = $quote['delivery_fee'];
@@ -217,7 +217,7 @@ class CartService
         if ($cart->coupon) {
             try {
                 $coupon = $this->discounts->findValid($cart->coupon->code, $subtotal, $userId, $email);
-                $applied = $this->discounts->discountAmount($coupon, $subtotal, $delivery);
+                $applied = $this->discounts->discountAmount($coupon, $subtotal, $delivery, (bool) $quote['free_shipping_eligible']);
                 $discount = $applied['discount'];
                 $delivery = $applied['delivery_fee'];
             } catch (\Throwable) {
@@ -244,10 +244,10 @@ class CartService
         ];
     }
 
-    public function payload(Request $request, ?string $province = null, ?string $city = null, ?string $postal = null): array
+    public function payload(Request $request, ?string $province = null, ?string $city = null, ?string $postal = null, ?string $country = null): array
     {
         $cart = $this->current($request);
-        $totals = $this->totals($cart, $province, $city, $postal, $request->user()?->id, $request->user()?->email);
+        $totals = $this->totals($cart, $province, $city, $postal, $request->user()?->id, $request->user()?->email, $country);
 
         return [
             'cart' => [

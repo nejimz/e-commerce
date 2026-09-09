@@ -26,6 +26,7 @@ export default function OrderShow({
         customer_email: string;
         customer_phone: string;
         shipping_line1: string;
+        shipping_country_code?: string;
         shipping_city: string;
         shipping_province: string;
         shipping_postal_code: string;
@@ -87,6 +88,7 @@ export default function OrderShow({
                                 <dd className="mt-0.5">
                                     {order.shipping_line1}, {order.shipping_city}, {order.shipping_province}{' '}
                                     {order.shipping_postal_code}
+                                    {order.shipping_country_code ? `, ${order.shipping_country_code}` : ''}
                                 </dd>
                             </div>
                         </dl>

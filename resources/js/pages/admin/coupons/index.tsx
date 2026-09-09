@@ -44,10 +44,10 @@ export default function CouponsIndex({ coupons }: { coupons: Coupon[] }) {
                             <AdminSelect id="type" value={form.data.type} onChange={(e) => form.setData('type', e.target.value)}>
                                 <option value="percentage">Percentage</option>
                                 <option value="fixed">Fixed amount</option>
-                                <option value="free_delivery">Free delivery</option>
+                                <option value="free_delivery">Free shipping</option>
                             </AdminSelect>
                         </AdminField>
-                        <AdminField label="Value" htmlFor="value" hint="Percent or peso amount. Ignored for free delivery." error={form.errors.value}>
+                        <AdminField label="Value" htmlFor="value" hint="Percent or peso amount. Ignored for free shipping." error={form.errors.value}>
                             <AdminInput
                                 id="value"
                                 type="number"
@@ -75,7 +75,7 @@ export default function CouponsIndex({ coupons }: { coupons: Coupon[] }) {
                 </AdminPanel>
                 <div className="lg:col-span-2">
                     {coupons.length === 0 ? (
-                        <EmptyState title="No promos" body="Create a code to offer a discount or free delivery." />
+                        <EmptyState title="No promos" body="Create a code to offer a discount or free shipping." />
                     ) : (
                         <AdminTable>
                             <AdminThead>

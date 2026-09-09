@@ -39,10 +39,26 @@ abstract class TestCase extends BaseTestCase
     protected function allowMakati(): DeliveryArea
     {
         return DeliveryArea::query()->create([
+            'country_code' => 'PH',
             'province' => 'Metro Manila',
             'city' => 'Makati',
             'mode' => 'allow',
             'delivery_fee' => 80,
+            'free_shipping_eligible' => true,
+            'is_active' => true,
+        ]);
+    }
+
+    protected function allowCountry(string $code, float $fee = 450): DeliveryArea
+    {
+        return DeliveryArea::query()->create([
+            'country_code' => $code,
+            'province' => null,
+            'city' => null,
+            'mode' => 'allow',
+            'delivery_fee' => $fee,
+            'free_shipping_eligible' => false,
+            'same_day_eligible' => false,
             'is_active' => true,
         ]);
     }

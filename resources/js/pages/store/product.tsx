@@ -256,7 +256,7 @@ export default function ProductPage({ product, related, jsonLd, seo }: { product
                     <ul className="mt-8 space-y-3 border-t border-[var(--shop-border)] pt-6 text-sm text-[var(--shop-text-muted)]">
                         <li className="flex gap-3">
                             <Truck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--shop-accent)]" aria-hidden />
-                            Metro Manila delivery on serviceable addresses. Fees shown at checkout.
+                            Ships to the Philippines and selected countries. Fees shown at checkout.
                         </li>
                         <li className="flex gap-3">
                             <RefreshCcw className="mt-0.5 h-4 w-4 shrink-0 text-[var(--shop-accent)]" aria-hidden />

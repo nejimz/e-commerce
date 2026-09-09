@@ -1,5 +1,6 @@
 import StoreLayout from '@/layouts/store-layout';
 import { AccountNav } from '@/components/store/account-nav';
+import { CountrySelect } from '@/components/store/country-select';
 import { ShopButton } from '@/components/store/shop-button';
 import { ShopInput, ShopLabel } from '@/components/store/shop-input';
 import { router, useForm } from '@inertiajs/react';
@@ -16,6 +17,7 @@ export default function AccountProfile({ user, addresses }: { user: { name: stri
         recipient_name: user.name,
         phone: user.phone || '',
         line1: '',
+        country_code: 'PH',
         city: '',
         province: 'Metro Manila',
         postal_code: '',
@@ -62,6 +64,7 @@ export default function AccountProfile({ user, addresses }: { user: { name: stri
                             <li key={a.id} className="flex justify-between gap-4 rounded-[var(--shop-radius-card)] bg-[var(--shop-surface)] p-4 text-sm">
                                 <span>
                                     {a.line1}, {a.city}
+                                    {a.country_code && a.country_code !== 'PH' ? ` (${a.country_code})` : ''}
                                 </span>
                                 <button type="button" className="text-[var(--shop-danger)]" onClick={() => router.delete(`/account/addresses/${a.id}`)}>
                                     Remove
@@ -77,8 +80,17 @@ export default function AccountProfile({ user, addresses }: { user: { name: stri
                         }}
                     >
                         <ShopInput placeholder="Street" value={address.data.line1} onChange={(e) => address.setData('line1', e.target.value)} />
+                        <div>
+                            <ShopLabel>Country</ShopLabel>
+                            <CountrySelect value={address.data.country_code} onChange={(e) => address.setData('country_code', e.target.value)} />
+                        </div>
                         <ShopInput placeholder="City" value={address.data.city} onChange={(e) => address.setData('city', e.target.value)} />
-                        <ShopInput placeholder="Postal" value={address.data.postal_code} onChange={(e) => address.setData('postal_code', e.target.value)} />
+                        <ShopInput
+                            placeholder={address.data.country_code === 'PH' ? 'Province' : 'State / region'}
+                            value={address.data.province}
+                            onChange={(e) => address.setData('province', e.target.value)}
+                        />
+                        <ShopInput placeholder="Postal / ZIP" value={address.data.postal_code} onChange={(e) => address.setData('postal_code', e.target.value)} />
                         <ShopButton variant="secondary" type="submit">
                             Add address
                         </ShopButton>

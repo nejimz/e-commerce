@@ -207,7 +207,7 @@ class CatalogController extends Controller
         $pages = [
             'terms' => ['title' => 'Terms of Sale', 'body' => Setting::get('page_terms', 'Terms of sale will be published here.')],
             'privacy' => ['title' => 'Privacy Notice', 'body' => Setting::get('page_privacy', 'Privacy notice will be published here.')],
-            'shipping' => ['title' => 'Shipping & Delivery', 'body' => Setting::get('page_shipping', 'Shipping policy will be published here.')],
+            'shipping' => ['title' => 'Shipping', 'body' => Setting::get('page_shipping', 'Shipping policy will be published here.')],
             'returns' => ['title' => 'Returns Policy', 'body' => Setting::get('page_returns', 'Returns policy will be published here.')],
             'contact' => ['title' => 'Contact', 'body' => Setting::get('page_contact', 'Email us at hello@example.com')],
         ];

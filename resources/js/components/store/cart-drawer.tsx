@@ -65,8 +65,8 @@ export function CartDrawer({
                                 <div className="border-b border-[var(--shop-border)] py-4">
                                     <p className="text-sm text-[var(--shop-text-muted)]">
                                         {remaining > 0
-                                            ? `${formatMoney(remaining)} away from free delivery`
-                                            : 'You have free delivery on this order.'}
+                                            ? `${formatMoney(remaining)} away from free shipping`
+                                            : 'You have free shipping on this order.'}
                                     </p>
                                     <div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--shop-bg)]">
                                         <div className="h-full rounded-full bg-[var(--shop-accent)]" style={{ width: `${progress}%` }} />
@@ -124,7 +124,7 @@ export function CartDrawer({
                             <div className="space-y-2 text-sm">
                                 <Row label="Subtotal" value={totals.subtotal} />
                                 {totals.discount > 0 && <Row label="Discount" value={-totals.discount} />}
-                                <Row label="Delivery" value={totals.delivery_fee} />
+                                <Row label="Shipping" value={totals.delivery_fee} />
                                 {totals.packing_fee > 0 && <Row label="Packing" value={totals.packing_fee} />}
                                 <div className="border-t border-[var(--shop-border)] pt-2">
                                     <Row label="Total" value={totals.total} bold />

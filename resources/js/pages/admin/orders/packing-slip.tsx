@@ -11,6 +11,12 @@ export default function PackingSlip({ order }: { order: any }) {
                 {order.shipping_line1}
                 <br />
                 {order.shipping_city}, {order.shipping_province} {order.shipping_postal_code}
+                {order.shipping_country_code ? (
+                    <>
+                        <br />
+                        {order.shipping_country_code}
+                    </>
+                ) : null}
                 <br />
                 {order.shipping_phone}
             </p>

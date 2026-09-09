@@ -47,7 +47,7 @@ class ShopSeeder extends Seeder
 
         $settings = [
             'store_name' => 'Shop',
-            'announcement' => 'Free delivery over PHP 2,000 in Metro Manila.',
+            'announcement' => 'Free shipping over PHP 2,000 in the Philippines. We also ship overseas.',
             'store_paused' => '0',
             'store_paused_message' => 'We are closed for stocktake. Browse as usual — checkout reopens soon.',
             'ordering_hours_enabled' => '0',
@@ -70,14 +70,35 @@ class ShopSeeder extends Seeder
         $mm = ['Quezon City', 'Makati', 'Manila', 'Pasig', 'Taguig', 'Mandaluyong'];
         foreach ($mm as $city) {
             DeliveryArea::query()->updateOrCreate(
-                ['province' => 'Metro Manila', 'city' => $city],
-                ['mode' => 'allow', 'delivery_fee' => 80, 'same_day_eligible' => true, 'is_active' => true],
+                ['country_code' => 'PH', 'province' => 'Metro Manila', 'city' => $city],
+                ['mode' => 'allow', 'delivery_fee' => 80, 'same_day_eligible' => true, 'free_shipping_eligible' => true, 'is_active' => true],
             );
         }
         DeliveryArea::query()->updateOrCreate(
-            ['province' => 'Cebu', 'city' => 'Cebu City'],
-            ['mode' => 'allow', 'delivery_fee' => 180, 'same_day_eligible' => false, 'is_active' => true],
+            ['country_code' => 'PH', 'province' => 'Cebu', 'city' => 'Cebu City'],
+            ['mode' => 'allow', 'delivery_fee' => 180, 'same_day_eligible' => false, 'free_shipping_eligible' => true, 'is_active' => true],
         );
+        foreach ([
+            ['SG', 450],
+            ['US', 950],
+            ['AU', 850],
+        ] as [$code, $fee]) {
+            $row = DeliveryArea::query()
+                ->where('country_code', $code)
+                ->whereNull('city')
+                ->whereNull('province')
+                ->first() ?? new DeliveryArea(['country_code' => $code]);
+            $row->fill([
+                'province' => null,
+                'city' => null,
+                'mode' => 'allow',
+                'delivery_fee' => $fee,
+                'same_day_eligible' => false,
+                'free_shipping_eligible' => false,
+                'is_active' => true,
+            ]);
+            $row->save();
+        }
 
         Coupon::query()->updateOrCreate(['code' => 'WELCOME10'], [
             'type' => 'percentage',
