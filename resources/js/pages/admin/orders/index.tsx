@@ -29,7 +29,14 @@ export default function OrdersIndex({
     const submit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
-        router.get('/admin/orders', Object.fromEntries(fd as any), { preserveState: true });
+        router.get(
+            '/admin/orders',
+            {
+                search: String(fd.get('search') ?? ''),
+                status: String(fd.get('status') ?? ''),
+            },
+            { preserveState: true },
+        );
     };
 
     return (

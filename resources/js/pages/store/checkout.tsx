@@ -96,7 +96,7 @@ export default function Checkout({
         if (isPh && !/^\d{4}$/.test(form.data.postal_code)) {
             errors.postal_code = 'Postal code must be 4 digits.';
         }
-        if (!isPh && !/^[A-Za-z0-9][A-Za-z0-9\s\-]{1,15}$/.test(form.data.postal_code.trim())) {
+        if (!isPh && !/^[A-Za-z0-9][A-Za-z0-9\s-]{1,15}$/.test(form.data.postal_code.trim())) {
             errors.postal_code = 'Enter a postal or ZIP code.';
         }
 

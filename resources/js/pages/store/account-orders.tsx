@@ -5,7 +5,14 @@ import { ShopButton } from '@/components/store/shop-button';
 import { formatMoney } from '@/components/product-card';
 import { Link } from '@inertiajs/react';
 
-export default function AccountOrders({ orders }: { orders: { data: any[] } }) {
+type AccountOrder = {
+    id: number;
+    order_number: string;
+    order_status: string;
+    total: number;
+};
+
+export default function AccountOrders({ orders }: { orders: { data: AccountOrder[] } }) {
     return (
         <StoreLayout title="Your orders">
             <h1 className="shop-h1">Orders</h1>

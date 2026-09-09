@@ -7,12 +7,39 @@ import { productImageSrc } from '@/lib/product-image';
 import { router, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
+type ProductImage = {
+    id: number;
+    path: string;
+    path_webp?: string;
+};
+
+type Product = {
+    id: number;
+    name: string;
+    sku: string;
+    slug?: string;
+    category_id?: number | null;
+    brand_id?: number | null;
+    short_description?: string | null;
+    description?: string | null;
+    price?: string | number;
+    compare_at_price?: string | number | null;
+    stock_quantity?: number;
+    low_stock_threshold?: number;
+    has_variants?: boolean;
+    is_featured?: boolean;
+    is_active?: boolean;
+    meta_title?: string | null;
+    meta_description?: string | null;
+    images?: ProductImage[];
+};
+
 export default function ProductForm({
     product,
     categories,
     brands,
 }: {
-    product: any | null;
+    product: Product | null;
     categories: { id: number; name: string; parent_id: number | null; parent_name: string | null; is_active: boolean }[];
     brands: { id: number; name: string; is_active: boolean }[];
 }) {
@@ -226,7 +253,7 @@ export default function ProductForm({
                             </AdminButton>
                         </form>
                         <div className="mt-4 flex flex-wrap gap-2">
-                            {product.images?.map((img: { id: number; path_webp?: string; path: string }) => (
+                            {product.images?.map((img) => (
                                 <img
                                     key={img.id}
                                     src={productImageSrc(`/storage/${img.path_webp || img.path}`, `${product.slug || product.name}-${img.id}`, 200)}

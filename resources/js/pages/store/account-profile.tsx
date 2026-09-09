@@ -5,7 +5,20 @@ import { ShopButton } from '@/components/store/shop-button';
 import { ShopInput, ShopLabel } from '@/components/store/shop-input';
 import { router, useForm } from '@inertiajs/react';
 
-export default function AccountProfile({ user, addresses }: { user: { name: string; email: string; phone: string }; addresses: any[] }) {
+type SavedAddress = {
+    id: number;
+    line1: string;
+    city: string;
+    country_code?: string | null;
+};
+
+export default function AccountProfile({
+    user,
+    addresses,
+}: {
+    user: { name: string; email: string; phone: string };
+    addresses: SavedAddress[];
+}) {
     const form = useForm({
         name: user.name,
         phone: user.phone || '',

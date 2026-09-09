@@ -2,21 +2,18 @@ import { useEffect, useState } from 'react';
 
 export type Appearance = 'light' | 'dark' | 'system';
 
-const prefersDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-const applyTheme = (_appearance: Appearance) => {
+const applyTheme = () => {
     document.documentElement.classList.remove('dark');
 };
 
 const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
 const handleSystemThemeChange = () => {
-    const currentAppearance = localStorage.getItem('appearance') as Appearance;
-    applyTheme(currentAppearance || 'system');
+    applyTheme();
 };
 
 export function initializeTheme() {
-    applyTheme('light');
+    applyTheme();
 }
 
 export function useAppearance() {
@@ -25,7 +22,7 @@ export function useAppearance() {
     const updateAppearance = (mode: Appearance) => {
         setAppearance(mode);
         localStorage.setItem('appearance', mode);
-        applyTheme(mode);
+        applyTheme();
     };
 
     useEffect(() => {

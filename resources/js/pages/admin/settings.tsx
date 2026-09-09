@@ -6,7 +6,9 @@ import AdminLayout from '@/layouts/admin-layout';
 import { useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
-export default function SettingsPage({ settings }: { settings: Record<string, any> }) {
+type SettingValue = string | number | boolean | null | undefined;
+
+export default function SettingsPage({ settings }: { settings: Record<string, SettingValue> }) {
     const form = useForm({
         store_name: settings.store_name || '',
         announcement: settings.announcement || '',

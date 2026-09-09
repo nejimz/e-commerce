@@ -3,7 +3,32 @@ import { ShopButton } from '@/components/store/shop-button';
 import { formatMoney } from '@/components/product-card';
 import { Link, router } from '@inertiajs/react';
 
-export default function OrderShow({ order }: { order: any }) {
+type OrderItem = {
+    id: number;
+    product_name_snapshot: string;
+    options_snapshot?: string | null;
+    quantity: number;
+    line_total: number;
+};
+
+type StatusLog = {
+    id: number;
+    to_status: string;
+    note?: string | null;
+};
+
+type StoreOrder = {
+    order_number: string;
+    order_status: string;
+    payment_status: string;
+    total: number;
+    shipping_line1?: string | null;
+    shipping_city?: string | null;
+    items: OrderItem[];
+    status_logs?: StatusLog[];
+};
+
+export default function OrderShow({ order }: { order: StoreOrder }) {
     return (
         <StoreLayout title={`Order ${order.order_number}`}>
             <p className="shop-caption uppercase tracking-[0.16em] text-[var(--shop-text-muted)]">Order</p>
@@ -12,7 +37,7 @@ export default function OrderShow({ order }: { order: any }) {
                 {String(order.order_status).replaceAll('_', ' ')} · {order.payment_status}
             </p>
             <ul className="mt-8 divide-y divide-[var(--shop-border)] border-y border-[var(--shop-border)]">
-                {order.items.map((i: any) => (
+                {order.items.map((i) => (
                     <li key={i.id} className="flex justify-between gap-4 py-4 text-sm">
                         <span>
                             {i.product_name_snapshot} {i.options_snapshot ? `(${i.options_snapshot})` : ''} × {i.quantity}
@@ -27,7 +52,7 @@ export default function OrderShow({ order }: { order: any }) {
             </p>
             {order.status_logs && (
                 <ol className="mt-8 space-y-2 text-sm text-[var(--shop-text-muted)]">
-                    {order.status_logs.map((l: any) => (
+                    {order.status_logs.map((l) => (
                         <li key={l.id} className="capitalize">
                             {String(l.to_status).replaceAll('_', ' ')} {l.note ? `— ${l.note}` : ''}
                         </li>
